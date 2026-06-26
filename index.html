@@ -516,6 +516,7 @@ function renderStrata1(){
   lg+=`<span><i style="background:repeating-linear-gradient(45deg,var(--clay),var(--clay) 3px,#fff 3px,#fff 5px)"></i>雙重符號</span>`;
   lg+=`<span><i style="border-color:var(--water);border-style:dashed"></i>地下水位</span>`;
   lg+=`<span><i style="background:var(--bad)"></i>開挖底面</span>`;
+  lg+=`<span><i style="border-color:var(--ink);border-style:dashed"></i>擋土壁趾</span>`;
   document.getElementById("legend1").innerHTML=lg;
   document.getElementById("note1").textContent=`${DATA.boreholes.length} 孔 · 共用深度尺 0–${md}m`;
 }
@@ -592,6 +593,7 @@ function renderLogDetail(){
   }
   if(wallTip!=null&&wallTip<=md){const y=padTop+wallTip*scale;
     svg+=`<line x1="${cx}" y1="${y}" x2="${right}" y2="${y}" stroke="var(--ink)" stroke-width="1.1" stroke-dasharray="6 3"/>`;
+    svg+=`<text x="${right}" y="${y+12}" font-size="9" text-anchor="end" fill="var(--ink)" font-weight="600">擋土壁趾 ${wallTip.toFixed(1)}m</text>`;
   }
   svg+=`</svg>`;
   document.getElementById("logDetail").innerHTML=svg;
@@ -682,7 +684,7 @@ function renderChecks(){
       }
     }
     // 砂湧 (sand at base or wall tip in sand)
-    const tip=(de!=null&&D!=null)?de+D:null;
+    const tip=D!=null?D:null;
     const Ltip=tip!=null?layerAt(b,tip):null;
     const sandHere = g==="sand" || (Ltip&&baseGroup(Ltip.uscs)==="sand");
     if(sandHere && D!=null && de!=null){
@@ -727,7 +729,7 @@ function renderChecks(){
     on: boilGov!=null, key:"boil", nm:"砂湧 / 管湧", en:"Boiling / Piping", pass:1.5,
     cond: sandRelevant? "擋土壁趾/底面遇透水砂層" : (bgArr.includes("clay")?"底面為黏土具黏聚力，無砂湧之虞":"無明顯砂層"),
     fs: boilGov?boilGov.FS:null,
-    formula:"FS = 2·γ′·D ⁄ (γw·ΔHw)　(Terzaghi)",
+    formula:"FS = 2·γ′·(D−De) ⁄ (γw·ΔHw)　(Terzaghi)",
     subst: boilGov?`= 2×${fmt(boilGov.gp)}×${fmt(boilGov.embed)} ⁄ (1.0×${fmt(boilGov.dHw)})`:null,
     govern: boilGov?`主控 ${boilGov.b}（${esc(boilGov.layer.uscs)}, γ′=${fmt(boilGov.gp)} t/m³, ΔHw=${fmt(boilGov.dHw)}m）`:"",
     naReason: !boilGov && bgArr.includes("clay")? "黏土低透水且具黏聚力，太沙基砂湧機制不成立（仍須檢核連續壁接頭水密性以防局部管湧）。":null,
@@ -868,7 +870,7 @@ function renderSummary(checkRes){
       ${clItem(impSt,`<b>地質改良</b>　${impNote}`)}
       ${clItem("warn","<b>設計水位</b>　現場實測是否仍低於設計常時水位？是否已考慮鄰案停抽、暴雨回升？")}
       ${clItem("warn",`<b>地表超載</b>　開挖邊緣機具/鋼筋堆置是否超過 q=${fmt(d.q)} t/m²？`)}
-      ${clItem("warn",`<b>擋土措施規格</b>　貫入深度 D=${fmt(d.D)}m 是否落實？連續壁接頭水密性（防局部管湧）？`)}
+      ${clItem("warn",`<b>擋土措施規格</b>　擋土措施深度 D=${fmt(d.D)}m 是否落實？連續壁接頭水密性（防局部管湧）？`)}
       ${clItem(dewSt,"<b>降水／解壓</b>　受壓砂層是否需設解壓井？是否採面內降水、埋設水壓計動態控管？")}
       ${clItem(gravSt,"<b>卵礫石層</b>　N&gt;100 為假性高 N 值（鑽頭頂石），勿據以高估承載力；施工防型鋼偏斜、特米管阻塞。")}
     </ul>`;
