@@ -289,7 +289,7 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
       </div>
       <div class="grid3">
         <div class="field"><label>開挖深度 De (m)</label><input id="f_de" type="number" step="0.1"></div>
-        <div class="field"><label>連續壁貫入 D (m)</label><input id="f_D" type="number" step="0.1"></div>
+        <div class="field"><label>擋土措施貫入 D (m)</label><input id="f_D" type="number" step="0.1"></div>
         <div class="field"><label>地表超載 q (t/m²)</label><input id="f_q" type="number" step="0.5"></div>
         <div class="field"><label>設計高水位 GL- (m)</label><input id="f_whi" type="number" step="0.1"></div>
         <div class="field"><label>常時水位 GL- (m)</label><input id="f_wno" type="number" step="0.1"></div>
@@ -501,7 +501,7 @@ function renderStrata1(){
   }
   if(wallTip!=null && wallTip<=md){const y=padTop+wallTip*scale;
     svg+=`<line x1="${axisW}" y1="${y}" x2="${fullW}" y2="${y}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="6 3"/>`;
-    svg+=`<text x="${fullW}" y="${y+12}" font-size="9.5" text-anchor="end" fill="var(--ink)" font-weight="600">壁趾 ${wallTip.toFixed(1)}m</text>`;
+    svg+=`<text x="${fullW}" y="${y+12}" font-size="9.5" text-anchor="end" fill="var(--ink)" font-weight="600">擋土壁趾 ${wallTip.toFixed(1)}m</text>`;
   }
   svg+=`</svg>`;
   document.getElementById("strata1").innerHTML=svg;
@@ -703,7 +703,7 @@ function renderChecks(){
 
   // hint
   const bgArr=[...baseGroups];
-  let hint = de==null ? `請先在「編輯資料」填入開挖深度 De、連續壁貫入 D 與設計水位，FS 會即時計算。`
+  let hint = de==null ? `請先在「編輯資料」填入開挖深度 De、擋土措施貫入 D 與設計水位，FS 會即時計算。`
     : `開挖底面（De=${de}m）所在土層：${bgArr.map(g=>GROUP_LABEL[g]).join(" / ")}。系統依此點亮對應破壞模式，並取各孔<b>最不利</b>者為主控。`;
   document.getElementById("checkHint").innerHTML=hint;
 
@@ -722,7 +722,7 @@ function renderChecks(){
   const sandRelevant = bgArr.includes("sand") || boilGov!=null;
   out.push(checkCard({
     on: boilGov!=null, key:"boil", nm:"砂湧 / 管湧", en:"Boiling / Piping", pass:1.5,
-    cond: sandRelevant? "壁趾/底面遇透水砂層" : (bgArr.includes("clay")?"底面為黏土具黏聚力，無砂湧之虞":"無明顯砂層"),
+    cond: sandRelevant? "擋土壁趾/底面遇透水砂層" : (bgArr.includes("clay")?"底面為黏土具黏聚力，無砂湧之虞":"無明顯砂層"),
     fs: boilGov?boilGov.FS:null,
     formula:"FS = 2·γ′·D ⁄ (γw·ΔHw)　(Terzaghi)",
     subst: boilGov?`= 2×${fmt(boilGov.gp)}×${boilGov.D} ⁄ (1.0×${fmt(boilGov.dHw)})`:null,
@@ -854,7 +854,7 @@ function renderHeader(){
     ["鑽孔數",DATA.boreholes.length,"孔"],
     ["最大孔深",md.toFixed(0),"m"],
     ["開挖深度",fmt(d.De),"m"],
-    ["連續壁貫入",fmt(d.D),"m"],
+    ["擋土措施貫入",fmt(d.D),"m"],
     ["常時水位","GL-"+fmt(d.w_no),"m"],
     ["承壓水頭",d.confHead!=null?"GL-"+fmt(d.confHead):"—","m"]
   ];
