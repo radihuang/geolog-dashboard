@@ -460,7 +460,7 @@ function renderStrata1(){
   const scale=usable/md;
   const colW=120, gap=18, axisW=42;
   const de=num(DATA.design.De), D=num(DATA.design.D);
-  const wallTip=(de!=null&&D!=null)?de+D:null;
+  const wallTip=D!=null?D:null;
 
   let svg=`<svg width="${axisW+ (colW+gap)*DATA.boreholes.length}" height="${H}" font-family="var(--mono)">${svgDefs()}`;
   // depth axis
@@ -529,7 +529,7 @@ function renderLogDetail(){
   const H=Math.max(520, md*9+40), padTop=24, scale=(H-padTop-16)/md;
   const axisW=40, colW=150, nW=210, nMax=60;
   const W=axisW+colW+nW+90;
-  const de=num(DATA.design.De), D=num(DATA.design.D), wallTip=(de!=null&&D!=null)?de+D:null;
+  const de=num(DATA.design.De), D=num(DATA.design.D), wallTip=D!=null?D:null;
 
   let svg=`<svg width="${W}" height="${H}" font-family="var(--mono)">${svgDefs()}`;
   // depth axis
@@ -683,11 +683,12 @@ function renderChecks(){
     const tip=(de!=null&&D!=null)?de+D:null;
     const Ltip=tip!=null?layerAt(b,tip):null;
     const sandHere = g==="sand" || (Ltip&&baseGroup(Ltip.uscs)==="sand");
-    if(sandHere && D!=null){
+    if(sandHere && D!=null && de!=null){
       const Lref = g==="sand"?Lbase:Ltip;
+      const embed=D-de; // 開挖底面以下嵌入段長度
       const gp=(Lref.gamma||1.95)-GW; const wl=num(d.w_no); const dHw=(wl!=null)?de-wl:de;
-      if(dHw>0){ const FS=(2*gp*D)/(GW*dHw);
-        if(!boilGov||FS<boilGov.FS) boilGov={b:b.id,FS,gp,D,dHw,layer:Lref};
+      if(dHw>0 && embed>0){ const FS=(2*gp*embed)/(GW*dHw);
+        if(!boilGov||FS<boilGov.FS) boilGov={b:b.id,FS,gp,embed,dHw,layer:Lref};
       }
     }
     // 上舉 (clay cap over confined sand) — needs confined head
@@ -725,7 +726,7 @@ function renderChecks(){
     cond: sandRelevant? "擋土壁趾/底面遇透水砂層" : (bgArr.includes("clay")?"底面為黏土具黏聚力，無砂湧之虞":"無明顯砂層"),
     fs: boilGov?boilGov.FS:null,
     formula:"FS = 2·γ′·D ⁄ (γw·ΔHw)　(Terzaghi)",
-    subst: boilGov?`= 2×${fmt(boilGov.gp)}×${boilGov.D} ⁄ (1.0×${fmt(boilGov.dHw)})`:null,
+    subst: boilGov?`= 2×${fmt(boilGov.gp)}×${fmt(boilGov.embed)} ⁄ (1.0×${fmt(boilGov.dHw)})`:null,
     govern: boilGov?`主控 ${boilGov.b}（${esc(boilGov.layer.uscs)}, γ′=${fmt(boilGov.gp)} t/m³, ΔHw=${fmt(boilGov.dHw)}m）`:"",
     naReason: !boilGov && bgArr.includes("clay")? "黏土低透水且具黏聚力，太沙基砂湧機制不成立（仍須檢核連續壁接頭水密性以防局部管湧）。":null,
     premise:`砂湧屬<b>瞬時破壞</b>，規範要求 FS≥1.5（部分取 2.0）。提升 FS 須增加貫入深度 D（被動）或主動降水降低 ΔHw（如設解壓井）。連續壁接頭漏水會讓水抄捷徑，極易演變管湧。`
