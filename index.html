@@ -111,7 +111,9 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
 .chip.water{border-color:var(--water);color:var(--water)}
 .checklist{list-style:none;padding:0;margin:0}
 .checklist li{padding:8px 0 8px 26px;position:relative;border-top:1px solid var(--line-soft);font-size:13px}
-.checklist li:before{content:"□";position:absolute;left:4px;top:7px;font-family:var(--mono);color:var(--ink-faint);font-size:15px}
+.checklist li:before{content:none}
+.dot{position:absolute;left:5px;top:9px;font-size:14px;line-height:1}
+.dot-bad{color:var(--bad)}.dot-warn{color:var(--warn)}.dot-ok{color:var(--ok)}.dot-na{color:var(--ink-faint)}
 
 /* ---- Edit drawer ---- */
 .overlay{position:fixed;inset:0;background:rgba(20,30,40,.45);z-index:60;display:none}
@@ -824,6 +826,35 @@ function renderSummary(checkRes){
     clayStmt=`<p>底面為黏土層，<b>水位升降直接影響有效應力</b>：σ′=σ−u，水位每上升 1m，u 增 1 t/m²、σ′ 下降約 1 t/m²，而 Su≈(0.2~0.33)σ′ 隨之降低 → 地盤變軟、隆起餘裕縮小。施工期降水失敗或連日大雨使水位回升，原判定 FS 可能由 1.2 掉破 1.0。黏土層另須「快挖快撐」以縮短應力解除與吸水軟化時間。</p>`;
   }
 
+  const d=DATA.design;
+  const hasGravel=DATA.boreholes.some(b=>b.layers.some(l=>baseGroup(l.uscs)==="gravel"));
+  const clItem=(status,text)=>{
+    const col={bad:'var(--bad)',warn:'var(--warn)',ok:'var(--ok)',na:'var(--ink-faint)'};
+    return `<li><span class="dot" style="color:${col[status]}">${status==='na'?'○':'●'}</span>${text}</li>`;
+  };
+
+  // 地質改良燈號
+  let impSt, impNote;
+  if(!bg.includes("clay")){
+    impSt="na"; impNote="底面非黏土，隆起機制不成立，通常不需底面地改（仍視設計要求確認）。";
+  } else if(!checkRes.heaveGov){
+    impSt="warn"; impNote="底面為黏土但缺乏 Su 資料，無法判斷是否需要地改。";
+  } else if(checkRes.heaveGov.FS>=1.5){
+    impSt="ok"; impNote=`隆起 FS=${checkRes.heaveGov.FS.toFixed(2)}（≥1.5），初判地質條件良好，確認設計是否即無地改前提。`;
+  } else if(checkRes.heaveGov.FS>=1.2){
+    impSt="warn"; impNote=`隆起 FS=${checkRes.heaveGov.FS.toFixed(2)}（1.2–1.5），地改與否依設計要求；確認改良範圍與單壓強度達標。`;
+  } else {
+    impSt="bad"; impNote=`隆起 FS=${checkRes.heaveGov.FS.toFixed(2)} < 1.2，初判需底面地質改良──範圍覆蓋全底面？深度達設計值？`;
+  }
+
+  // 降水/解壓燈號
+  let dewSt;
+  if(checkRes.upliftGov&&checkRes.upliftGov.FS<1.2) dewSt="bad";
+  else if(checkRes.boilGov||checkRes.upliftGov||d.confHead!=null||bg.includes("sand")||bg.includes("gravel")) dewSt="warn";
+  else dewSt="na";
+
+  const gravSt=hasGravel?"warn":"na";
+
   let html=`
     <p class="lead">${lead}</p>
     <div class="chips">
@@ -832,14 +863,14 @@ function renderSummary(checkRes){
       ${sepBH.length?`<span class="chip water">水壓分離 ${sepBH.join("、")} → 隔水層</span>`:""}
     </div>
     ${clayStmt}
-    <p style="font-size:13px;color:var(--ink-soft);margin-top:4px">下列「前提條件」若現場未落實，上述安全結論即失效——當作監督檢查表逐項確認：</p>
+    <p style="font-size:13px;color:var(--ink-soft);margin-top:4px">下列前提條件若現場未落實，上述安全結論即失效。燈號為初判提醒，不取代技師判斷：</p>
     <ul class="checklist">
-      <li>地質改良：範圍是否覆蓋全開挖底面？深度是否打到設計值（連續壁底附近）？改良率/單壓強度達標？</li>
-      <li>設計水位：現場實測是否仍低於設計常時水位？是否已考慮鄰案停抽、暴雨回升？</li>
-      <li>地表超載：開挖邊緣機具/鋼筋堆置是否超過 q=${fmt(DATA.design.q)} t/m²？</li>
-      <li>連續壁規格：貫入深度 D=${fmt(DATA.design.D)}m 是否落實？接頭水密性（防局部管湧）？</li>
-      <li>降水/解壓：受壓砂層是否需設解壓井？是否採面內降水、埋設水壓計動態控管？</li>
-      <li>卵礫石層 N&gt;100 為假性高 N 值（鑽頭頂石），勿據以高估承載力；施工防型鋼偏斜、特米管阻塞。</li>
+      ${clItem(impSt,`<b>地質改良</b>　${impNote}`)}
+      ${clItem("warn","<b>設計水位</b>　現場實測是否仍低於設計常時水位？是否已考慮鄰案停抽、暴雨回升？")}
+      ${clItem("warn",`<b>地表超載</b>　開挖邊緣機具/鋼筋堆置是否超過 q=${fmt(d.q)} t/m²？`)}
+      ${clItem("warn",`<b>擋土措施規格</b>　貫入深度 D=${fmt(d.D)}m 是否落實？連續壁接頭水密性（防局部管湧）？`)}
+      ${clItem(dewSt,"<b>降水／解壓</b>　受壓砂層是否需設解壓井？是否採面內降水、埋設水壓計動態控管？")}
+      ${clItem(gravSt,"<b>卵礫石層</b>　N&gt;100 為假性高 N 值（鑽頭頂石），勿據以高估承載力；施工防型鋼偏斜、特米管阻塞。")}
     </ul>`;
   document.getElementById("summary").innerHTML=html;
 }
