@@ -1,0 +1,54 @@
+{
+  "name": "示範 B · 砂礫質台地（虛構資料 · 僅供操作練習）",
+  "loc": "示範台地 · 與任何實際基地無關",
+  "design": {
+    "De": 14.0,
+    "D": 8.0,
+    "q": 2,
+    "w_hi": 0.5,
+    "w_no": 1.5,
+    "w_lo": 3.0,
+    "w_struct": 26,
+    "Df": 13.5,
+    "confHead": null,
+    "Nc": 5.7
+  },
+  "boreholes": [
+    {
+      "id": "BH-1",
+      "total": 40,
+      "ow": 1.5,
+      "pz": null,
+      "layers": [
+        { "t": 0,    "b": 1.2,  "uscs": "SF", "name": "回填",           "N": 5,   "gamma": 1.85 },
+        { "t": 1.2,  "b": 5.0,  "uscs": "CL", "name": "紅土（高塑性）", "N": 6,   "LL": 50, "PI": 26, "Su": 4.0, "gamma": 1.9,  "sample": "T" },
+        { "t": 5.0,  "b": 19.0, "uscs": "SM", "name": "粉土質砂",       "N": 20,  "phi": 32, "gamma": 1.95, "sample": "S" },
+        { "t": 19.0, "b": 40,   "uscs": "GW", "name": "卵礫石層",       "N": 100, "gamma": 2.15, "sample": "S" }
+      ]
+    },
+    {
+      "id": "BH-2",
+      "total": 38,
+      "ow": 1.8,
+      "pz": { "depth": 30, "head": 2.0 },
+      "layers": [
+        { "t": 0,    "b": 1.0,  "uscs": "SF", "name": "回填",           "N": 6,   "gamma": 1.85 },
+        { "t": 1.0,  "b": 4.5,  "uscs": "CL", "name": "紅土（高塑性）", "N": 7,   "LL": 48, "PI": 24, "Su": 4.5, "gamma": 1.9,  "sample": "T" },
+        { "t": 4.5,  "b": 18.0, "uscs": "SM", "name": "粉土質砂",       "N": 22,  "phi": 33, "gamma": 1.96, "sample": "S" },
+        { "t": 18.0, "b": 38,   "uscs": "GW", "name": "卵礫石層",       "N": 100, "gamma": 2.15, "sample": "S" }
+      ]
+    },
+    {
+      "id": "BH-3",
+      "total": 42,
+      "ow": 1.2,
+      "pz": null,
+      "layers": [
+        { "t": 0,    "b": 1.0,  "uscs": "SF", "name": "回填",           "N": 5,   "gamma": 1.85 },
+        { "t": 1.0,  "b": 5.5,  "uscs": "CL", "name": "紅土（高塑性）", "N": 6,   "LL": 52, "PI": 27, "Su": 3.8, "gamma": 1.89, "sample": "T" },
+        { "t": 5.5,  "b": 20.0, "uscs": "SM", "name": "粉土質砂",       "N": 19,  "phi": 32, "gamma": 1.94, "sample": "S" },
+        { "t": 20.0, "b": 42,   "uscs": "GW", "name": "卵礫石層",       "N": 100, "gamma": 2.15, "sample": "S" }
+      ]
+    }
+  ]
+}

@@ -40,6 +40,8 @@ input,select{font-family:var(--body);font-size:13px}
 .tbtn:hover{background:#28323C;border-color:#566570}
 .tbtn.primary{background:var(--water);border-color:var(--water);color:#fff}
 .tbtn.primary:hover{background:#175b82}
+select.tbtn{background:#28323C url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23D7DDDE' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 9px center;-webkit-appearance:none;appearance:none;padding-right:26px}
+select.tbtn option{background:#1B2530;color:#EDEFEC}
 
 /* ---- Project header ---- */
 .projhead{background:var(--panel);border-bottom:1px solid var(--line);padding:16px 20px 14px}
@@ -173,7 +175,9 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
     <span class="s">Borehole Report Dashboard</span>
   </div>
   <div class="spacer"></div>
-  <button class="tbtn" id="btnSample">載入虛構示範</button>
+  <select class="tbtn" id="demoSelect" title="載入虛構示範">
+    <option value="" disabled selected>載入虛構示範…</option>
+  </select>
   <button class="tbtn" id="btnImport">匯入 JSON</button>
   <button class="tbtn" id="btnExport">匯出 JSON</button>
   <button class="tbtn primary" id="btnEdit">編輯資料</button>
@@ -194,7 +198,7 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
     <div class="acts">
       <button class="primary" id="emptyImport">匯入 JSON</button>
       <button id="emptyEdit">新增鑽孔 / 編輯資料</button>
-      <button id="emptyDemo">載入虛構示範</button>
+      <span id="emptyDemos" style="display:inline-flex;gap:10px;flex-wrap:wrap"></span>
     </div>
   </div>
 
@@ -324,7 +328,7 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
    網站預設開成「空白」，他人開啟連結看不到任何案件。
    ============================================================ */
 const SAMPLE = {
-  name:"示範案例（虛構資料 · 僅供操作練習）",
+  name:"示範 A · 台北盆地軟弱黏土（虛構資料 · 僅供操作練習）",
   loc:"示範市示範區 · 與任何實際基地無關",
   design:{ De:18.0, D:18.0, q:2, w_hi:1.0, w_no:2.5, w_lo:4.0, w_struct:28, Df:17.5, confHead:null, Nc:5.7 },
   boreholes:[
@@ -355,6 +359,43 @@ const SAMPLE = {
       ]}
   ]
 };
+
+// 示範 B：砂礫質台地（虛構）— 開挖底面落在砂層，觸發「砂湧」檢核；隆起 N/A（底面非黏土）
+const SAMPLE_B = {
+  name:"示範 B · 砂礫質台地（虛構資料 · 僅供操作練習）",
+  loc:"示範台地 · 與任何實際基地無關",
+  design:{ De:14.0, D:8.0, q:2, w_hi:0.5, w_no:1.5, w_lo:3.0, w_struct:26, Df:13.5, confHead:null, Nc:5.7 },
+  boreholes:[
+    { id:"BH-1", total:40, ow:1.5, pz:null,
+      layers:[
+        {t:0,b:1.2,uscs:"SF",name:"回填",N:5,gamma:1.85},
+        {t:1.2,b:5.0,uscs:"CL",name:"紅土（高塑性）",N:6,LL:50,PI:26,Su:4.0,gamma:1.9,sample:"T"},
+        {t:5.0,b:19.0,uscs:"SM",name:"粉土質砂",N:20,phi:32,gamma:1.95,sample:"S"},
+        {t:19.0,b:40,uscs:"GW",name:"卵礫石層",N:100,gamma:2.15,sample:"S"}
+      ]},
+    { id:"BH-2", total:38, ow:1.8, pz:{depth:30, head:2.0},
+      layers:[
+        {t:0,b:1.0,uscs:"SF",name:"回填",N:6,gamma:1.85},
+        {t:1.0,b:4.5,uscs:"CL",name:"紅土（高塑性）",N:7,LL:48,PI:24,Su:4.5,gamma:1.9,sample:"T"},
+        {t:4.5,b:18.0,uscs:"SM",name:"粉土質砂",N:22,phi:33,gamma:1.96,sample:"S"},
+        {t:18.0,b:38,uscs:"GW",name:"卵礫石層",N:100,gamma:2.15,sample:"S"}
+      ]},
+    { id:"BH-3", total:42, ow:1.2, pz:null,
+      layers:[
+        {t:0,b:1.0,uscs:"SF",name:"回填",N:5,gamma:1.85},
+        {t:1.0,b:5.5,uscs:"CL",name:"紅土（高塑性）",N:6,LL:52,PI:27,Su:3.8,gamma:1.89,sample:"T"},
+        {t:5.5,b:20.0,uscs:"SM",name:"粉土質砂",N:19,phi:32,gamma:1.94,sample:"S"},
+        {t:20.0,b:42,uscs:"GW",name:"卵礫石層",N:100,gamma:2.15,sample:"S"}
+      ]}
+  ]
+};
+
+// 示範情境登錄表
+const DEMOS = [
+  { label:"A · 台北盆地軟弱黏土", data:SAMPLE },
+  { label:"B · 砂礫質台地（砂湧）", data:SAMPLE_B }
+];
+function loadDemo(i){ DATA=JSON.parse(JSON.stringify(DEMOS[i].data)); renderAll(); }
 
 // 預設空白狀態：公開連結開啟時不顯示任何案件資料
 const EMPTY = {
@@ -985,8 +1026,15 @@ document.getElementById("applyJson").onclick=()=>{
    Toolbar: sample / import / export
    ============================================================ */
 document.getElementById("bhPick").onchange=renderLogDetail;
-document.getElementById("btnSample").onclick=()=>{ DATA=JSON.parse(JSON.stringify(SAMPLE)); renderAll(); };
-document.getElementById("emptyDemo").onclick=()=>{ DATA=JSON.parse(JSON.stringify(SAMPLE)); renderAll(); };
+// toolbar scenario select
+const demoSel=document.getElementById("demoSelect");
+DEMOS.forEach((d,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=d.label; demoSel.appendChild(o); });
+demoSel.onchange=()=>{ const v=demoSel.value; if(v!=="") loadDemo(+v); demoSel.value=""; };
+
+// empty-state demo buttons
+const emptyDemos=document.getElementById("emptyDemos");
+DEMOS.forEach((d,i)=>{ const b=document.createElement("button"); b.textContent="示範 "+d.label; b.onclick=()=>loadDemo(i); emptyDemos.appendChild(b); });
+
 document.getElementById("emptyImport").onclick=()=>document.getElementById("fileInput").click();
 document.getElementById("emptyEdit").onclick=()=>{
   if(!DATA.boreholes||!DATA.boreholes.length){
