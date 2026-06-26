@@ -107,12 +107,16 @@
 
 ## 部署到 GitHub Pages
 
-1. 建立 repo `geolog-dashboard`，把 `index.html`（與 `README.md`、`sample.json`、`sample-terrace.json`、`.gitignore`）放進根目錄。
-2. repo → **Settings → Pages**。
-3. **Source** 選 `Deploy from a branch`，分支選 `main`、資料夾選 `/ (root)`，儲存。
-4. 幾分鐘後取得網址 `https://<你的帳號>.github.io/geolog-dashboard/`，分享給同事即可。
+最快的方式是直接 **Fork** 本 repo，不需要自己建檔或設定任何東西。
 
-整個網站就是單一 `index.html`，無建置步驟。
+1. 登入 GitHub，開啟本 repo 頁面，點右上角 **「Fork」**，選自己的帳號，建立副本。
+2. 進入你 Fork 後的 repo（`https://github.com/<你的帳號>/geolog-dashboard`）。
+3. 點上方 **「Settings」** → 左側選單 **「Pages」**。
+4. **Source** 選 `Deploy from a branch`，Branch 選 `main`、資料夾選 `/ (root)`，按 **Save**。
+5. 等約 1–2 分鐘，頁面上方會出現網址：`https://<你的帳號>.github.io/geolog-dashboard/`。
+6. 將網址分享給同事，對方開啟後看到空白儀表板，匯入各自保管的 `.json` 即可使用。
+
+整個網站就是單一 `index.html`，Fork 後不需要任何建置步驟。
 
 ---
 
