@@ -1,0 +1,58 @@
+{
+  "name": "示範案例（虛構資料 · 僅供操作練習）",
+  "loc": "示範市示範區 · 與任何實際基地無關",
+  "design": {
+    "De": 18.0,
+    "D": 18.0,
+    "q": 2,
+    "w_hi": 1.0,
+    "w_no": 2.5,
+    "w_lo": 4.0,
+    "w_struct": 28,
+    "Df": 17.5,
+    "confHead": null,
+    "Nc": 5.7
+  },
+  "boreholes": [
+    {
+      "id": "BH-A",
+      "total": 50,
+      "ow": 2.5,
+      "pz": { "depth": 40, "head": 6.0 },
+      "layers": [
+        { "t": 0,    "b": 1.0,  "uscs": "SF",    "name": "回填",                "N": 4,   "gamma": 1.8 },
+        { "t": 1.0,  "b": 6.0,  "uscs": "CL",    "name": "軟弱黏土",            "N": 3,   "LL": 40, "PI": 20, "Su": 2.0, "gamma": 1.8,  "sample": "T" },
+        { "t": 6.0,  "b": 13.0, "uscs": "SM",    "name": "粉土質砂",            "N": 10,  "phi": 30, "gamma": 1.9,  "sample": "S" },
+        { "t": 13.0, "b": 42,   "uscs": "CL",    "name": "深層黏土",            "N": 5,   "LL": 38, "PI": 18, "Su": 4.5, "gamma": 1.85, "sample": "T" },
+        { "t": 42,   "b": 50,   "uscs": "GM",    "name": "礫石層",              "N": 100, "gamma": 2.1,  "sample": "S" }
+      ]
+    },
+    {
+      "id": "BH-B",
+      "total": 48,
+      "ow": 2.8,
+      "pz": null,
+      "layers": [
+        { "t": 0,    "b": 1.2,  "uscs": "SF",    "name": "回填",                "N": 3,   "gamma": 1.8 },
+        { "t": 1.2,  "b": 6.5,  "uscs": "CL",    "name": "軟弱黏土",            "N": 2,   "LL": 42, "PI": 21, "Su": 1.6, "gamma": 1.78, "sample": "T" },
+        { "t": 6.5,  "b": 14.0, "uscs": "SM-CL", "name": "黏土質砂（雙重符號）", "N": 8,   "phi": 29, "gamma": 1.88, "sample": "S" },
+        { "t": 14.0, "b": 40,   "uscs": "CL",    "name": "深層黏土",            "N": 6,   "LL": 37, "PI": 17, "Su": 5.0, "gamma": 1.86, "sample": "T" },
+        { "t": 40,   "b": 48,   "uscs": "GM",    "name": "礫石層",              "N": 100, "gamma": 2.1,  "sample": "S" }
+      ]
+    },
+    {
+      "id": "BH-C",
+      "total": 52,
+      "ow": 2.2,
+      "pz": { "depth": 42, "head": 5.5 },
+      "layers": [
+        { "t": 0,    "b": 0.9,  "uscs": "SF",    "name": "回填",                "N": 5,   "gamma": 1.8 },
+        { "t": 0.9,  "b": 5.0,  "uscs": "CL",    "name": "軟弱黏土",            "N": 3,   "LL": 39, "PI": 19, "Su": 2.2, "gamma": 1.8,  "sample": "T" },
+        { "t": 5.0,  "b": 12.0, "uscs": "SM",    "name": "粉土質砂",            "N": 12,  "phi": 31, "gamma": 1.92, "sample": "S" },
+        { "t": 12.0, "b": 19.0, "uscs": "CL",    "name": "中等黏土",            "N": 4,   "LL": 41, "PI": 20, "Su": 3.5, "gamma": 1.83, "sample": "T" },
+        { "t": 19.0, "b": 44,   "uscs": "CL",    "name": "深層黏土",            "N": 7,   "LL": 36, "PI": 16, "Su": 5.5, "gamma": 1.87, "sample": "T" },
+        { "t": 44,   "b": 52,   "uscs": "GM",    "name": "礫石層",              "N": 100, "gamma": 2.1,  "sample": "S" }
+      ]
+    }
+  ]
+}

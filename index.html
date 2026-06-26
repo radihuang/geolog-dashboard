@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鑽探報告判讀儀表板 · Borehole Report Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E7EAE6; --panel:#F6F7F4; --panel-2:#EEF0EC;
+  --ink:#1B2530; --ink-soft:#56616C; --ink-faint:#8A9399;
+  --line:#C7CDC8; --line-soft:#D9DDD8;
+  --water:#1E6E9C; --water-soft:#9CC2D8;
+  --ok:#2F7D53; --warn:#C0852A; --bad:#B23B3B;
+  --fill:#97908A; --clay:#7C9A8E; --silt:#C2BB86; --sand:#D6A94E; --gravel:#C17A45;
+  --display:'Space Grotesk',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --body:'Noto Sans TC','Space Grotesk',system-ui,sans-serif;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:-.01em;margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button{font-family:var(--body);cursor:pointer}
+input,select{font-family:var(--body);font-size:13px}
+:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+
+/* ---- Top bar ---- */
+.topbar{position:sticky;top:0;z-index:40;background:var(--ink);color:#EDEFEC;
+  display:flex;align-items:center;gap:18px;padding:10px 20px;border-bottom:1px solid #000}
+.brand{display:flex;flex-direction:column;line-height:1.15}
+.brand .t{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.02em}
+.brand .s{font-size:10.5px;color:#9AA6AE;letter-spacing:.18em;text-transform:uppercase;font-family:var(--mono)}
+.topbar .spacer{flex:1}
+.tbtn{background:transparent;border:1px solid #3A4650;color:#D7DDDE;padding:7px 12px;border-radius:var(--r);font-size:12.5px;letter-spacing:.02em;transition:.15s}
+.tbtn:hover{background:#28323C;border-color:#566570}
+.tbtn.primary{background:var(--water);border-color:var(--water);color:#fff}
+.tbtn.primary:hover{background:#175b82}
+
+/* ---- Project header ---- */
+.projhead{background:var(--panel);border-bottom:1px solid var(--line);padding:16px 20px 14px}
+.projhead .name{font-family:var(--display);font-size:21px;font-weight:600}
+.projhead .loc{color:var(--ink-soft);font-size:13px;margin-top:1px}
+.readout{display:flex;flex-wrap:wrap;gap:0;margin-top:12px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--panel-2)}
+.ro{padding:8px 16px;border-right:1px solid var(--line);min-width:118px}
+.ro:last-child{border-right:none}
+.ro .k{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-family:var(--mono)}
+.ro .v{font-family:var(--mono);font-weight:600;font-size:17px;margin-top:1px}
+.ro .v small{font-size:11px;color:var(--ink-soft);font-weight:500}
+
+/* ---- Layout ---- */
+.wrap{max-width:1280px;margin:0 auto;padding:20px}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:18px;overflow:hidden}
+.card-h{display:flex;align-items:baseline;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:linear-gradient(var(--panel),var(--panel-2))}
+.card-h .idx{font-family:var(--mono);font-size:12px;font-weight:600;color:#fff;background:var(--ink);width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center}
+.card-h h2{font-size:16px}
+.card-h .en{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase}
+.card-h .note{margin-left:auto;font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
+.card-b{padding:18px}
+
+/* legend */
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--ink-soft);padding:0 18px 14px}
+.legend i{display:inline-block;width:13px;height:13px;border-radius:2px;margin-right:5px;vertical-align:-2px;border:1px solid rgba(0,0,0,.18)}
+
+/* scrolling strata area */
+.scroller{overflow-x:auto;padding-bottom:6px}
+.strata-grid{display:flex;align-items:flex-start;gap:0}
+
+/* detail picker */
+.picker{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;flex-wrap:wrap}
+.picker select{padding:5px 8px;border:1px solid var(--line);border-radius:var(--r);background:#fff}
+
+/* water table */
+.gw-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+.gw-table th,.gw-table td{border:1px solid var(--line-soft);padding:6px 9px;text-align:center}
+.gw-table th{background:var(--panel-2);font-weight:600;font-size:11px;letter-spacing:.04em;color:var(--ink-soft)}
+.gw-table td.mono{font-family:var(--mono)}
+.flagsep{color:var(--water);font-weight:600}
+
+/* checks */
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.check{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.check.off{opacity:.55}
+.check-h{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--line-soft)}
+.check-h .nm{font-family:var(--display);font-weight:600;font-size:14px}
+.check-h .en{font-family:var(--mono);font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em}
+.badge{margin-left:auto;font-family:var(--mono);font-weight:600;font-size:12px;padding:3px 9px;border-radius:20px;color:#fff;white-space:nowrap}
+.badge.ok{background:var(--ok)} .badge.warn{background:var(--warn)} .badge.bad{background:var(--bad)} .badge.na{background:var(--ink-faint)}
+.check-b{padding:12px 13px}
+.formula{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:5px;padding:8px 10px;margin:2px 0 9px;overflow-x:auto;white-space:nowrap}
+.subst{font-family:var(--mono);font-size:12px;color:var(--ink-soft);margin:4px 0}
+.fsline{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-family:var(--mono)}
+.fsline .big{font-size:22px;font-weight:600}
+.fsline .pass{font-size:12px;color:var(--ink-soft)}
+.premise{font-size:11.5px;color:var(--ink-soft);margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.premise b{color:var(--bad);font-weight:600}
+.govern{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-top:6px}
+
+/* summary */
+.summary p{margin:0 0 10px}
+.summary .lead{font-size:15px;line-height:1.6}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+.chip{font-size:12px;font-family:var(--mono);background:var(--panel-2);border:1px solid var(--line);border-radius:20px;padding:4px 11px}
+.chip.bad{border-color:var(--bad);color:var(--bad)}
+.chip.water{border-color:var(--water);color:var(--water)}
+.checklist{list-style:none;padding:0;margin:0}
+.checklist li{padding:8px 0 8px 26px;position:relative;border-top:1px solid var(--line-soft);font-size:13px}
+.checklist li:before{content:"□";position:absolute;left:4px;top:7px;font-family:var(--mono);color:var(--ink-faint);font-size:15px}
+
+/* ---- Edit drawer ---- */
+.overlay{position:fixed;inset:0;background:rgba(20,30,40,.45);z-index:60;display:none}
+.overlay.open{display:block}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(720px,96vw);background:var(--bg);z-index:61;
+  transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(0,0,0,.18)}
+.drawer.open{transform:translateX(0)}
+.drawer-h{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--ink);color:#EDEFEC}
+.drawer-h h2{font-size:16px;color:#fff}
+.drawer-h .spacer{flex:1}
+.icon-btn{background:transparent;border:1px solid #3A4650;color:#D7DDDE;width:30px;height:30px;border-radius:5px;font-size:16px;line-height:1}
+.drawer-b{flex:1;overflow-y:auto;padding:18px}
+.fset{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:16px}
+.fset>h3{font-size:13.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.fset>h3 .en{font-family:var(--mono);font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;font-weight:400}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:11px;color:var(--ink-soft);font-family:var(--mono)}
+.field input,.field select{padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:#fff;width:100%}
+.bh-edit{border:1px solid var(--line);border-radius:8px;margin-bottom:12px;background:var(--panel)}
+.bh-edit summary{padding:10px 13px;font-family:var(--mono);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:10px}
+.bh-edit summary .dl{flex:1;color:var(--ink-soft);font-weight:400;font-size:11.5px}
+.bh-edit .inner{padding:0 13px 13px}
+.layertbl{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:8px}
+.layertbl th{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;padding:2px 3px;text-align:left;font-weight:500}
+.layertbl td{padding:2px}
+.layertbl input,.layertbl select{width:100%;padding:4px 5px;border:1px solid var(--line-soft);border-radius:4px;background:#fff;font-size:11.5px}
+.layertbl .num{font-family:var(--mono)}
+.miniadd{background:var(--panel-2);border:1px dashed var(--line);color:var(--ink-soft);border-radius:5px;padding:5px 10px;font-size:12px;margin-top:8px}
+.rm{background:transparent;border:none;color:var(--bad);font-size:15px;line-height:1;padding:0 4px}
+.drawer-f{padding:14px 18px;border-top:1px solid var(--line);background:var(--panel);display:flex;gap:10px;align-items:center}
+.drawer-f .spacer{flex:1}
+.jsonbox{width:100%;height:150px;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:6px;padding:8px;background:#fff;resize:vertical}
+
+.hint{font-size:11.5px;color:var(--ink-soft);line-height:1.5;background:var(--panel-2);border-left:3px solid var(--water);padding:8px 11px;border-radius:0 5px 5px 0;margin-bottom:14px}
+.foot{text-align:center;color:var(--ink-faint);font-size:11px;font-family:var(--mono);padding:8px 0 30px}
+.foot a{color:var(--ink-soft)}
+.empty{display:none;background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:40px 24px;text-align:center;margin-bottom:18px}
+.empty h2{font-size:18px;margin-bottom:8px}
+.empty p{color:var(--ink-soft);font-size:13.5px;max-width:520px;margin:0 auto 18px;line-height:1.6}
+.empty .acts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.empty .acts button{padding:9px 16px;border-radius:6px;font-size:13px;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.empty .acts button.primary{background:var(--water);border-color:var(--water);color:#fff}
+.ph{color:var(--ink-faint);font-size:12.5px;font-family:var(--mono);padding:24px;text-align:center}
+
+@media (max-width:640px){
+  .ro{min-width:96px;padding:7px 11px}
+  .ro .v{font-size:15px}
+  .wrap{padding:12px}
+  .grid2,.grid3{grid-template-columns:1fr 1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="t">鑽探報告判讀儀表板</span>
+    <span class="s">Borehole Report Dashboard</span>
+  </div>
+  <div class="spacer"></div>
+  <button class="tbtn" id="btnSample">載入虛構示範</button>
+  <button class="tbtn" id="btnImport">匯入 JSON</button>
+  <button class="tbtn" id="btnExport">匯出 JSON</button>
+  <button class="tbtn primary" id="btnEdit">編輯資料</button>
+  <input type="file" id="fileInput" accept=".json" style="display:none">
+</div>
+
+<div class="projhead">
+  <div class="name" id="pName">—</div>
+  <div class="loc" id="pLoc">—</div>
+  <div class="readout" id="readout"></div>
+</div>
+
+<div class="wrap">
+
+  <div class="empty" id="emptyState">
+    <h2>尚無案件資料</h2>
+    <p>這是一個空白的判讀工具。請<b>匯入</b>你保管的案件 JSON,或<b>新增鑽孔</b>開始輸入。所有資料只存在你目前的瀏覽器,不會上傳、也不會留在這個網站上。</p>
+    <div class="acts">
+      <button class="primary" id="emptyImport">匯入 JSON</button>
+      <button id="emptyEdit">新增鑽孔 / 編輯資料</button>
+      <button id="emptyDemo">載入虛構示範</button>
+    </div>
+  </div>
+
+  <!-- ① 簡化地層比較圖 -->
+  <section class="card">
+    <div class="card-h">
+      <span class="idx">1</span>
+      <h2>簡化地層比較圖</h2>
+      <span class="en">Simplified Strata</span>
+      <span class="note" id="note1"></span>
+    </div>
+    <div class="legend" id="legend1"></div>
+    <div class="card-b">
+      <div class="scroller"><div id="strata1"></div></div>
+    </div>
+  </section>
+
+  <!-- ② 柱狀圖逐孔詳圖 -->
+  <section class="card">
+    <div class="card-h">
+      <span class="idx">2</span>
+      <h2>柱狀圖（逐孔詳圖）</h2>
+      <span class="en">Boring Log · N-value</span>
+    </div>
+    <div class="card-b">
+      <div class="picker">
+        <span>選擇鑽孔：</span><select id="bhPick"></select>
+        <span style="margin-left:auto;color:var(--ink-faint)">取樣：S 劈管（擾動） · T 薄管（不擾動）</span>
+      </div>
+      <div class="scroller"><div id="logDetail"></div></div>
+    </div>
+  </section>
+
+  <!-- ③ 地下水位分析 -->
+  <section class="card">
+    <div class="card-h">
+      <span class="idx">3</span>
+      <h2>地下水位分析</h2>
+      <span class="en">Groundwater</span>
+    </div>
+    <div class="card-b">
+      <div id="gwAnalysis"></div>
+    </div>
+  </section>
+
+  <!-- ④ 檢核點 -->
+  <section class="card">
+    <div class="card-h">
+      <span class="idx">4</span>
+      <h2>檢核點（含計算式）</h2>
+      <span class="en">Stability Checks · 初判</span>
+      <span class="note">FS 為概略初判，不取代技師正式分析</span>
+    </div>
+    <div class="card-b">
+      <div class="hint" id="checkHint"></div>
+      <div class="checks" id="checks"></div>
+    </div>
+  </section>
+
+  <!-- ⑤ 重點摘要 -->
+  <section class="card">
+    <div class="card-h">
+      <span class="idx">5</span>
+      <h2>重點摘要</h2>
+      <span class="en">Key Summary</span>
+    </div>
+    <div class="card-b summary" id="summary"></div>
+  </section>
+
+  <div class="foot">逐孔判讀 · 簡化表僅作檢核 · 卵礫石層 N&gt;100 需防假性高 N 值　|　純前端，資料以 JSON 在本機進出，不上傳</div>
+</div>
+
+<!-- ===== Edit drawer ===== -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-h">
+    <h2>編輯資料</h2><div class="spacer"></div>
+    <button class="icon-btn" id="btnCloseDrawer">✕</button>
+  </div>
+  <div class="drawer-b">
+    <div class="hint">逐孔校核後輸入：請依各鑽孔柱狀圖<b>各自獨立</b>記載的層位填寫，<b>勿直接套用簡化土層表（如表 3.1）的平均值</b>。卵礫石層（GW/GP/GM）與「岩層中夾礫石顆粒」務必分辨清楚。</div>
+
+    <div class="fset">
+      <h3>專案與設計參數 <span class="en">Project · Design</span></h3>
+      <div class="grid2" style="margin-bottom:10px">
+        <div class="field"><label>專案名稱</label><input id="f_name"></div>
+        <div class="field"><label>位置</label><input id="f_loc"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>開挖深度 De (m)</label><input id="f_de" type="number" step="0.1"></div>
+        <div class="field"><label>連續壁貫入 D (m)</label><input id="f_D" type="number" step="0.1"></div>
+        <div class="field"><label>地表超載 q (t/m²)</label><input id="f_q" type="number" step="0.5"></div>
+        <div class="field"><label>設計高水位 GL- (m)</label><input id="f_whi" type="number" step="0.1"></div>
+        <div class="field"><label>常時水位 GL- (m)</label><input id="f_wno" type="number" step="0.1"></div>
+        <div class="field"><label>低水位 GL- (m)</label><input id="f_wlo" type="number" step="0.1"></div>
+        <div class="field"><label>結構自重 (t/m²)</label><input id="f_wst" type="number" step="0.5"></div>
+        <div class="field"><label>基礎底深 Df (m)</label><input id="f_df" type="number" step="0.1"></div>
+        <div class="field"><label>承壓水頭 GL- (m)</label><input id="f_conf" type="number" step="0.1" placeholder="選填"></div>
+      </div>
+    </div>
+
+    <div class="fset">
+      <h3>鑽孔資料 <span class="en">Boreholes</span></h3>
+      <div id="bhEditList"></div>
+      <button class="miniadd" id="addBH">＋ 新增鑽孔</button>
+    </div>
+
+    <div class="fset">
+      <h3>JSON 直接編輯 <span class="en">Power user</span></h3>
+      <textarea class="jsonbox" id="jsonEdit" spellcheck="false"></textarea>
+      <button class="miniadd" id="applyJson" style="margin-top:8px">套用 JSON</button>
+    </div>
+  </div>
+  <div class="drawer-f">
+    <span style="font-size:11.5px;color:var(--ink-soft)" id="saveMsg">變更即時套用</span>
+    <div class="spacer"></div>
+    <button class="tbtn" id="btnExport2" style="border-color:var(--line);color:var(--ink)">匯出 JSON</button>
+    <button class="tbtn primary" id="btnDone">完成</button>
+  </div>
+</aside>
+
+<script>
+/* ============================================================
+   資料模型
+   SAMPLE 為「完全虛構」的操作練習資料，與任何實際基地無關，可安全公開。
+   真實案件資料請勿寫入此檔、勿提交至 repo；只當私人 .json 匯入使用。
+   網站預設開成「空白」，他人開啟連結看不到任何案件。
+   ============================================================ */
+const SAMPLE = {
+  name:"示範案例（虛構資料 · 僅供操作練習）",
+  loc:"示範市示範區 · 與任何實際基地無關",
+  design:{ De:18.0, D:18.0, q:2, w_hi:1.0, w_no:2.5, w_lo:4.0, w_struct:28, Df:17.5, confHead:null, Nc:5.7 },
+  boreholes:[
+    { id:"BH-A", total:50, ow:2.5, pz:{depth:40, head:6.0},
+      layers:[
+        {t:0,b:1.0,uscs:"SF",name:"回填",N:4,gamma:1.8},
+        {t:1.0,b:6.0,uscs:"CL",name:"軟弱黏土",N:3,LL:40,PI:20,Su:2.0,gamma:1.8,sample:"T"},
+        {t:6.0,b:13.0,uscs:"SM",name:"粉土質砂",N:10,phi:30,gamma:1.9,sample:"S"},
+        {t:13.0,b:42,uscs:"CL",name:"深層黏土",N:5,LL:38,PI:18,Su:4.5,gamma:1.85,sample:"T"},
+        {t:42,b:50,uscs:"GM",name:"礫石層",N:100,gamma:2.1,sample:"S"}
+      ]},
+    { id:"BH-B", total:48, ow:2.8, pz:null,
+      layers:[
+        {t:0,b:1.2,uscs:"SF",name:"回填",N:3,gamma:1.8},
+        {t:1.2,b:6.5,uscs:"CL",name:"軟弱黏土",N:2,LL:42,PI:21,Su:1.6,gamma:1.78,sample:"T"},
+        {t:6.5,b:14.0,uscs:"SM-CL",name:"黏土質砂（雙重符號）",N:8,phi:29,gamma:1.88,sample:"S"},
+        {t:14.0,b:40,uscs:"CL",name:"深層黏土",N:6,LL:37,PI:17,Su:5.0,gamma:1.86,sample:"T"},
+        {t:40,b:48,uscs:"GM",name:"礫石層",N:100,gamma:2.1,sample:"S"}
+      ]},
+    { id:"BH-C", total:52, ow:2.2, pz:{depth:42, head:5.5},
+      layers:[
+        {t:0,b:0.9,uscs:"SF",name:"回填",N:5,gamma:1.8},
+        {t:0.9,b:5.0,uscs:"CL",name:"軟弱黏土",N:3,LL:39,PI:19,Su:2.2,gamma:1.8,sample:"T"},
+        {t:5.0,b:12.0,uscs:"SM",name:"粉土質砂",N:12,phi:31,gamma:1.92,sample:"S"},
+        {t:12.0,b:19.0,uscs:"CL",name:"中等黏土",N:4,LL:41,PI:20,Su:3.5,gamma:1.83,sample:"T"},
+        {t:19.0,b:44,uscs:"CL",name:"深層黏土",N:7,LL:36,PI:16,Su:5.5,gamma:1.87,sample:"T"},
+        {t:44,b:52,uscs:"GM",name:"礫石層",N:100,gamma:2.1,sample:"S"}
+      ]}
+  ]
+};
+
+// 預設空白狀態：公開連結開啟時不顯示任何案件資料
+const EMPTY = {
+  name:"", loc:"",
+  design:{ De:null, D:null, q:2, w_hi:null, w_no:null, w_lo:null, w_struct:null, Df:null, confHead:null, Nc:5.7 },
+  boreholes:[]
+};
+
+let DATA = JSON.parse(JSON.stringify(EMPTY));
+const GW = 1.0; // 水單位重 t/m³
+
+/* ============================================================
+   分類 / 顏色
+   ============================================================ */
+function group(uscs){
+  const u=(uscs||"").toUpperCase().trim();
+  if(u.includes("SF")||u.includes("FILL")||u.startsWith("F")) return "fill";
+  const dual=u.includes("-");
+  const first=u.replace(/[^GSMC]/g,"")[0]||u[0];
+  let g;
+  if(first==="G") g="gravel";
+  else if(first==="S") g="sand";
+  else if(first==="M") g="silt";
+  else if(first==="C") g="clay";
+  else g="silt";
+  return dual? g+"|dual" : g;
+}
+const COLOR={fill:"var(--fill)",clay:"var(--clay)",silt:"var(--silt)",sand:"var(--sand)",gravel:"var(--gravel)"};
+function baseGroup(uscs){return group(uscs).split("|")[0];}
+function fillFor(uscs){return COLOR[baseGroup(uscs)]||"#bbb";}
+function isDual(uscs){return group(uscs).includes("dual");}
+
+const GROUP_LABEL={fill:"回填 SF",clay:"黏土 C",silt:"粉土 M",sand:"砂土 S",gravel:"卵礫石 G"};
+
+/* SVG 圖樣定義（卵礫石點、雙重符號斜線） */
+function svgDefs(){
+  return `<defs>
+    <pattern id="grav" width="9" height="9" patternUnits="userSpaceOnUse">
+      <rect width="9" height="9" fill="var(--gravel)"/>
+      <circle cx="2.5" cy="2.5" r="1.5" fill="#9c5e34"/>
+      <circle cx="6.5" cy="6" r="1.8" fill="#a86a3d"/>
+    </pattern>
+    <pattern id="dual" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="7" height="7" fill="currentColor"/>
+      <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(255,255,255,.55)" stroke-width="2"/>
+    </pattern>
+  </defs>`;
+}
+function rectFill(uscs){
+  if(baseGroup(uscs)==="gravel") return "url(#grav)";
+  return fillFor(uscs);
+}
+
+/* ============================================================
+   ① 簡化地層比較圖
+   ============================================================ */
+function maxDepth(){if(!DATA.boreholes||!DATA.boreholes.length)return 0;return Math.max(...DATA.boreholes.map(b=>b.total||Math.max(...b.layers.map(l=>l.b))));}
+
+function renderStrata1(){
+  const md=maxDepth();
+  const H=480, padTop=14, padBot=14, usable=H-padTop-padBot;
+  const scale=usable/md;
+  const colW=120, gap=18, axisW=42;
+  const de=num(DATA.design.De), D=num(DATA.design.D);
+  const wallTip=(de!=null&&D!=null)?de+D:null;
+
+  let svg=`<svg width="${axisW+ (colW+gap)*DATA.boreholes.length}" height="${H}" font-family="var(--mono)">${svgDefs()}`;
+  // depth axis
+  svg+=`<g>`;
+  for(let z=0;z<=md;z+=5){
+    const y=padTop+z*scale;
+    svg+=`<line x1="${axisW-6}" y1="${y}" x2="${axisW}" y2="${y}" stroke="var(--line)"/>`;
+    svg+=`<text x="${axisW-9}" y="${y+3}" font-size="9.5" text-anchor="end" fill="var(--ink-faint)">${z}</text>`;
+  }
+  svg+=`<text x="6" y="${padTop+4}" font-size="9" fill="var(--ink-faint)">GL-m</text></g>`;
+
+  DATA.boreholes.forEach((b,i)=>{
+    const x=axisW+i*(colW+gap);
+    svg+=`<g transform="translate(${x},0)">`;
+    svg+=`<text x="${colW/2}" y="11" font-size="11" font-weight="600" text-anchor="middle" fill="var(--ink)">${esc(b.id)}</text>`;
+    b.layers.forEach(l=>{
+      const y=padTop+l.t*scale, h=Math.max((l.b-l.t)*scale,1);
+      const fa=isDual(l.uscs)?`fill="url(#dual)" style="color:${fillFor(l.uscs)}"`:`fill="${rectFill(l.uscs)}"`;
+      svg+=`<rect x="0" y="${y}" width="${colW}" height="${h}" ${fa} stroke="rgba(0,0,0,.18)" stroke-width=".6"/>`;
+      if(h>16){
+        svg+=`<text x="6" y="${y+13}" font-size="10" font-weight="600" fill="#1d1d1d">${esc(l.uscs)}</text>`;
+        svg+=`<text x="${colW-5}" y="${y+13}" font-size="9" text-anchor="end" fill="rgba(0,0,0,.6)">${(l.b-l.t).toFixed(1)}m</text>`;
+      }
+    });
+    // water table (ow)
+    if(b.ow!=null){const yw=padTop+b.ow*scale;
+      svg+=`<line x1="0" y1="${yw}" x2="${colW}" y2="${yw}" stroke="var(--water)" stroke-width="1.4" stroke-dasharray="4 2"/>`;
+      svg+=`<path d="M3 ${yw} l5 6 l5 -6 z" fill="var(--water)"/>`;
+    }
+    svg+=`</g>`;
+  });
+
+  // span reference lines across all holes
+  const fullW=axisW+(colW+gap)*DATA.boreholes.length-gap;
+  if(de!=null){const y=padTop+de*scale;
+    svg+=`<line x1="${axisW}" y1="${y}" x2="${fullW}" y2="${y}" stroke="var(--bad)" stroke-width="1.6"/>`;
+    svg+=`<text x="${fullW}" y="${y-4}" font-size="9.5" text-anchor="end" fill="var(--bad)" font-weight="600">開挖底面 De=${de}m</text>`;
+  }
+  if(wallTip!=null && wallTip<=md){const y=padTop+wallTip*scale;
+    svg+=`<line x1="${axisW}" y1="${y}" x2="${fullW}" y2="${y}" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="6 3"/>`;
+    svg+=`<text x="${fullW}" y="${y+12}" font-size="9.5" text-anchor="end" fill="var(--ink)" font-weight="600">壁趾 ${wallTip.toFixed(1)}m</text>`;
+  }
+  svg+=`</svg>`;
+  document.getElementById("strata1").innerHTML=svg;
+
+  // legend (groups present)
+  const present=new Set(); DATA.boreholes.forEach(b=>b.layers.forEach(l=>present.add(baseGroup(l.uscs))));
+  let lg="";
+  ["fill","clay","silt","sand","gravel"].forEach(g=>{ if(present.has(g))
+    lg+=`<span><i style="background:${COLOR[g]}"></i>${GROUP_LABEL[g]}</span>`; });
+  lg+=`<span><i style="background:repeating-linear-gradient(45deg,var(--clay),var(--clay) 3px,#fff 3px,#fff 5px)"></i>雙重符號</span>`;
+  lg+=`<span><i style="border-color:var(--water);border-style:dashed"></i>地下水位</span>`;
+  lg+=`<span><i style="background:var(--bad)"></i>開挖底面</span>`;
+  document.getElementById("legend1").innerHTML=lg;
+  document.getElementById("note1").textContent=`${DATA.boreholes.length} 孔 · 共用深度尺 0–${md}m`;
+}
+
+/* ============================================================
+   ② 柱狀圖逐孔詳圖（N 值曲線）
+   ============================================================ */
+function renderLogDetail(){
+  const sel=document.getElementById("bhPick");
+  const b=DATA.boreholes.find(x=>x.id===sel.value)||DATA.boreholes[0];
+  if(!b){document.getElementById("logDetail").innerHTML="";return;}
+  const md=b.total||Math.max(...b.layers.map(l=>l.b));
+  const H=Math.max(520, md*9+40), padTop=24, scale=(H-padTop-16)/md;
+  const axisW=40, colW=150, nW=210, nMax=60;
+  const W=axisW+colW+nW+90;
+  const de=num(DATA.design.De), D=num(DATA.design.D), wallTip=(de!=null&&D!=null)?de+D:null;
+
+  let svg=`<svg width="${W}" height="${H}" font-family="var(--mono)">${svgDefs()}`;
+  // depth axis
+  for(let z=0;z<=md;z+=2){
+    const y=padTop+z*scale, major=z%10===0;
+    svg+=`<line x1="${axisW-(major?7:4)}" y1="${y}" x2="${axisW}" y2="${y}" stroke="${major?'var(--ink-faint)':'var(--line)'}"/>`;
+    if(major) svg+=`<text x="${axisW-10}" y="${y+3}" font-size="9.5" text-anchor="end" fill="var(--ink-soft)">${z}</text>`;
+  }
+  svg+=`<text x="4" y="${padTop-8}" font-size="9" fill="var(--ink-faint)">GL-m</text>`;
+
+  // strata column
+  const cx=axisW;
+  b.layers.forEach(l=>{
+    const y=padTop+l.t*scale, h=Math.max((l.b-l.t)*scale,1.5);
+    const fa=isDual(l.uscs)?`fill="url(#dual)" style="color:${fillFor(l.uscs)}"`:`fill="${rectFill(l.uscs)}"`;
+    svg+=`<rect x="${cx}" y="${y}" width="${colW}" height="${h}" ${fa} stroke="rgba(0,0,0,.2)" stroke-width=".6"/>`;
+    if(h>14){
+      svg+=`<text x="${cx+7}" y="${y+13}" font-size="10.5" font-weight="600" fill="#171717">${esc(l.uscs)}</text>`;
+      svg+=`<text x="${cx+7}" y="${y+24>y+h-2?y+13:y+24}" font-size="9" fill="rgba(0,0,0,.65)">${esc(l.name||"")}</text>`;
+    }
+    let ann=[]; if(l.Su!=null)ann.push("Su="+l.Su); if(l.PI!=null)ann.push("PI="+l.PI); if(l.phi!=null)ann.push("φ="+l.phi+"°");
+    if(ann.length&&h>26) svg+=`<text x="${cx+colW-5}" y="${y+h-5}" font-size="8.5" text-anchor="end" fill="rgba(0,0,0,.6)">${ann.join("  ")}</text>`;
+  });
+
+  // N-value grid + curve
+  const nx0=axisW+colW+34;
+  svg+=`<text x="${nx0+nW/2}" y="${padTop-8}" font-size="9.5" text-anchor="middle" fill="var(--ink-soft)">SPT-N 值</text>`;
+  [0,10,20,30,40,50].forEach(n=>{const x=nx0+(n/nMax)*nW;
+    svg+=`<line x1="${x}" y1="${padTop}" x2="${x}" y2="${padTop+md*scale}" stroke="var(--line-soft)"/>`;
+    svg+=`<text x="${x}" y="${padTop-1}" font-size="8.5" text-anchor="middle" fill="var(--ink-faint)">${n}</text>`;
+  });
+  // curve points = layer mid-depth
+  let pts=[]; b.layers.forEach(l=>{ if(l.N==null)return;
+    const ncap=Math.min(l.N,nMax); const mid=(l.t+l.b)/2;
+    pts.push([nx0+(ncap/nMax)*nW, padTop+mid*scale, l]);
+  });
+  if(pts.length){
+    svg+=`<polyline points="${pts.map(p=>p[0]+","+p[1]).join(" ")}" fill="none" stroke="var(--ink)" stroke-width="1.6"/>`;
+    pts.forEach(p=>{
+      const real=p[2].N, capped=real>nMax;
+      svg+=`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="${capped?'var(--gravel)':'var(--ink)'}"/>`;
+      svg+=`<text x="${p[0]+7}" y="${p[1]+3}" font-size="8.5" fill="var(--ink-soft)">${real}${capped?'⚠':''}</text>`;
+      // sample marker
+      if(p[2].sample) svg+=`<text x="${nx0-9}" y="${p[1]+3}" font-size="9" text-anchor="end" font-weight="600" fill="${p[2].sample==='T'?'var(--water)':'var(--ink-faint)'}">${p[2].sample}</text>`;
+    });
+  }
+
+  // water + refs across the panel
+  const right=nx0+nW;
+  if(b.ow!=null){const yw=padTop+b.ow*scale;
+    svg+=`<line x1="${cx}" y1="${yw}" x2="${right}" y2="${yw}" stroke="var(--water)" stroke-width="1.3" stroke-dasharray="4 2"/>`;
+    svg+=`<path d="M${cx+3} ${yw} l5 6 l5 -6 z" fill="var(--water)"/>`;
+    svg+=`<text x="${right}" y="${yw-3}" font-size="9" text-anchor="end" fill="var(--water)">水位 GL-${b.ow}m</text>`;
+  }
+  if(de!=null&&de<=md){const y=padTop+de*scale;
+    svg+=`<line x1="${cx}" y1="${y}" x2="${right}" y2="${y}" stroke="var(--bad)" stroke-width="1.5"/>`;
+    svg+=`<text x="${right}" y="${y+12}" font-size="9" text-anchor="end" fill="var(--bad)" font-weight="600">開挖底面</text>`;
+  }
+  if(wallTip!=null&&wallTip<=md){const y=padTop+wallTip*scale;
+    svg+=`<line x1="${cx}" y1="${y}" x2="${right}" y2="${y}" stroke="var(--ink)" stroke-width="1.1" stroke-dasharray="6 3"/>`;
+  }
+  svg+=`</svg>`;
+  document.getElementById("logDetail").innerHTML=svg;
+}
+
+/* ============================================================
+   ③ 地下水位分析
+   ============================================================ */
+function renderGW(){
+  const d=DATA.design;
+  // table OW vs PZ
+  let rows="";
+  DATA.boreholes.forEach(b=>{
+    const ow=b.ow!=null?b.ow.toFixed(1):"—";
+    const pz=b.pz?`${b.pz.head.toFixed(1)}（埋深${b.pz.depth}m）`:"—";
+    let flag="—";
+    if(b.pz&&b.ow!=null){
+      const diff=Math.abs(b.pz.head-b.ow);
+      flag= diff>=2 ? `<span class="flagsep">分離 ${diff.toFixed(1)}m → 研判隔水層</span>` : `一致（水力連通）`;
+    }
+    rows+=`<tr><td>${esc(b.id)}</td><td class="mono">${ow}</td><td class="mono">${pz}</td><td style="font-size:11.5px">${flag}</td></tr>`;
+  });
+
+  // uplift at base for design water levels
+  const de=num(d.De);
+  function uplift(wl){ if(de==null||wl==null)return null; const dh=de-wl; return dh>0?dh*GW:0; }
+  const uHi=uplift(num(d.w_hi)), uNo=uplift(num(d.w_no));
+
+  let html=`
+  <div style="display:grid;grid-template-columns:1.15fr .85fr;gap:18px" class="gw-wrap">
+    <div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:600">觀測井 O.W. vs 水壓計 P.Z.（GL- m 水頭）</div>
+      <table class="gw-table">
+        <thead><tr><th>鑽孔</th><th>觀測井 O.W.</th><th>水壓計 P.Z. 水頭</th><th>研判</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55">
+        O.W. 量自由水面（淺層潛水）；P.Z. 鎖定特定深度孔隙水壓。兩者分離代表中間有<b>黏土隔水層</b>；
+        深層水頭低於淺層多受區域抽水（如景美層洩降）影響，對開挖底面相對有利；深層水頭高於地面則為<b>受壓水</b>危險訊號。
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:600">開挖底面上舉力（靜水壓）</div>
+      ${de==null?`<div class="hint">請於「編輯資料」填入開挖深度 De。</div>`:`
+      <div style="font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:6px;padding:11px 13px;line-height:1.9">
+        u = (De − 水位深度) × γw，γw = 1.0 t/m³<br>
+        高水位 GL-${fmt(d.w_hi)}m：u = (${de} − ${fmt(d.w_hi)}) × 1.0 = <b style="font-size:15px;color:var(--bad)">${fmt(uHi)} t/m²</b><br>
+        常時水位 GL-${fmt(d.w_no)}m：u = (${de} − ${fmt(d.w_no)}) × 1.0 = <b style="font-size:15px">${fmt(uNo)} t/m²</b>
+      </div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.55">
+        水位以下每加深 1m，靜水壓 +1 t/m²。此上舉力直接決定底面是否隆起/砂湧、結構是否上浮，以及抗拔樁與降水工法的需求。
+      </div>`}
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <span class="chip water">高水位 GL-${fmt(d.w_hi)} · 防上浮</span>
+        <span class="chip">常時 GL-${fmt(d.w_no)} · 定強度</span>
+        <span class="chip">低水位 GL-${fmt(d.w_lo)} · 評施工</span>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById("gwAnalysis").innerHTML=html;
+}
+
+/* ============================================================
+   ④ 檢核點 — 初判計算引擎
+   ============================================================ */
+function avgGammaAbove(b,depth){
+  let sumW=0,sumT=0;
+  b.layers.forEach(l=>{ const top=l.t, bot=Math.min(l.b,depth); if(bot>top){const th=bot-top; sumW+=(l.gamma||1.85)*th; sumT+=th;} });
+  return sumT>0? sumW/sumT : 1.85;
+}
+function layerAt(b,depth){ return b.layers.find(l=>depth>=l.t && depth<l.b) || b.layers[b.layers.length-1]; }
+
+function renderChecks(){
+  const d=DATA.design, de=num(d.De), D=num(d.D);
+  const out=[]; let baseGroups=new Set();
+  // classify base soil per borehole, find governing cases
+  let heaveGov=null, boilGov=null, upliftGov=null;
+  DATA.boreholes.forEach(b=>{
+    if(de==null)return;
+    const Lbase=layerAt(b,de); const g=baseGroup(Lbase.uscs); baseGroups.add(g);
+    const gAvg=avgGammaAbove(b,de);
+    // 隆起 (clay base)
+    if(g==="clay"){
+      const Su=Lbase.Su!=null?Lbase.Su:(Lbase.N!=null?0.6*Lbase.N:null);
+      if(Su!=null){
+        const FS=(d.Nc||5.7)*Su/(gAvg*de+num(d.q||0));
+        if(!heaveGov||FS<heaveGov.FS) heaveGov={b:b.id,FS,Su,gAvg,Nc:d.Nc||5.7,layer:Lbase};
+      }
+    }
+    // 砂湧 (sand at base or wall tip in sand)
+    const tip=(de!=null&&D!=null)?de+D:null;
+    const Ltip=tip!=null?layerAt(b,tip):null;
+    const sandHere = g==="sand" || (Ltip&&baseGroup(Ltip.uscs)==="sand");
+    if(sandHere && D!=null){
+      const Lref = g==="sand"?Lbase:Ltip;
+      const gp=(Lref.gamma||1.95)-GW; const wl=num(d.w_no); const dHw=(wl!=null)?de-wl:de;
+      if(dHw>0){ const FS=(2*gp*D)/(GW*dHw);
+        if(!boilGov||FS<boilGov.FS) boilGov={b:b.id,FS,gp,D,dHw,layer:Lref};
+      }
+    }
+    // 上舉 (clay cap over confined sand) — needs confined head
+    if(g==="clay" && d.confHead!=null){
+      // find first sand/gravel below base
+      const below=b.layers.find(l=>l.t>=de && (baseGroup(l.uscs)==="sand"||baseGroup(l.uscs)==="gravel"));
+      if(below){ const tcap=below.t-de; const head=below.t-num(d.confHead); // confined head height above base
+        const Uw=GW*head; const W=(Lbase.gamma||1.85)*tcap;
+        if(Uw>0){ const FS=W/Uw; if(!upliftGov||FS<upliftGov.FS) upliftGov={b:b.id,FS,tcap,head,gamma:Lbase.gamma||1.85}; }
+      }
+    }
+  });
+
+  // hint
+  const bgArr=[...baseGroups];
+  let hint = de==null ? `請先在「編輯資料」填入開挖深度 De、連續壁貫入 D 與設計水位，FS 會即時計算。`
+    : `開挖底面（De=${de}m）所在土層：${bgArr.map(g=>GROUP_LABEL[g]).join(" / ")}。系統依此點亮對應破壞模式，並取各孔<b>最不利</b>者為主控。`;
+  document.getElementById("checkHint").innerHTML=hint;
+
+  // ---- 隆起 ----
+  out.push(checkCard({
+    on: heaveGov!=null, key:"heave", nm:"隆起", en:"Heaving", pass:1.2,
+    cond: bgArr.includes("clay")? "底面為黏土層，主風險為隆起" : "底面非黏土，隆起非主控",
+    fs: heaveGov?heaveGov.FS:null,
+    formula:"FS = Nc · Su ⁄ (γ·De + q)",
+    subst: heaveGov?`= ${heaveGov.Nc} × ${fmt(heaveGov.Su)} ⁄ (${fmt(heaveGov.gAvg)}×${de} + ${fmt(d.q)})`:null,
+    govern: heaveGov?`主控 ${heaveGov.b}（${esc(heaveGov.layer.uscs)}, Su=${fmt(heaveGov.Su)} t/m²）`:"",
+    premise:`此為<b>簡化太沙基式（Nc≈${d.Nc||5.7}）</b>，<b>假設未做地質改良</b>。報告若以「地改率 X%、改良至 GL-Y m」為前提達 FS≥1.2，須以技師結論為準並落實現場改良範圍。`
+  }));
+
+  // ---- 砂湧 ----
+  const sandRelevant = bgArr.includes("sand") || boilGov!=null;
+  out.push(checkCard({
+    on: boilGov!=null, key:"boil", nm:"砂湧 / 管湧", en:"Boiling / Piping", pass:1.5,
+    cond: sandRelevant? "壁趾/底面遇透水砂層" : (bgArr.includes("clay")?"底面為黏土具黏聚力，無砂湧之虞":"無明顯砂層"),
+    fs: boilGov?boilGov.FS:null,
+    formula:"FS = 2·γ′·D ⁄ (γw·ΔHw)　(Terzaghi)",
+    subst: boilGov?`= 2×${fmt(boilGov.gp)}×${boilGov.D} ⁄ (1.0×${fmt(boilGov.dHw)})`:null,
+    govern: boilGov?`主控 ${boilGov.b}（${esc(boilGov.layer.uscs)}, γ′=${fmt(boilGov.gp)} t/m³, ΔHw=${fmt(boilGov.dHw)}m）`:"",
+    naReason: !boilGov && bgArr.includes("clay")? "黏土低透水且具黏聚力，太沙基砂湧機制不成立（仍須檢核連續壁接頭水密性以防局部管湧）。":null,
+    premise:`砂湧屬<b>瞬時破壞</b>，規範要求 FS≥1.5（部分取 2.0）。提升 FS 須增加貫入深度 D（被動）或主動降水降低 ΔHw（如設解壓井）。連續壁接頭漏水會讓水抄捷徑，極易演變管湧。`
+  }));
+
+  // ---- 上舉 ----
+  out.push(checkCard({
+    on: upliftGov!=null, key:"uplift", nm:"上舉（受壓水）", en:"Uplift Pressure", pass:1.2,
+    cond: d.confHead==null? "未輸入承壓水頭（選填）" : (upliftGov?"黏土蓋層下方有受壓砂層":"底面下方無受壓砂層"),
+    fs: upliftGov?upliftGov.FS:null,
+    formula:"FS = (γ_cap · t_cap) ⁄ (γw · h_w)",
+    subst: upliftGov?`= (${fmt(upliftGov.gamma)}×${fmt(upliftGov.tcap)}) ⁄ (1.0×${fmt(upliftGov.head)})`:null,
+    govern: upliftGov?`主控 ${upliftGov.b}（黏土蓋厚 ${fmt(upliftGov.tcap)}m）`:"",
+    naReason: d.confHead==null? "若基地存在受壓含水層，請於設計參數填入「承壓水頭 GL- m」以啟動此檢核。":null,
+    premise:`當黏土蓋層殘餘重量 < 下方受壓水上舉力，底面會被頂穿突湧。對策為<b>洩壓抽水</b>或加重壓載。`
+  }));
+
+  // ---- 浮力 ----
+  const Df=num(d.Df), wHi=num(d.w_hi), Wst=num(d.w_struct);
+  let buoy=null;
+  if(Df!=null&&wHi!=null){ const U=Math.max(Df-wHi,0)*GW; if(U>0&&Wst!=null) buoy={U,FS:Wst/U,Wst}; }
+  out.push(checkCard({
+    on: buoy!=null, key:"buoy", nm:"水浮力（完工）", en:"Buoyancy", pass:1.07,
+    cond:"完工後地下室抗浮",
+    fs: buoy?buoy.FS:null,
+    formula:"FS = 結構自重 ⁄ U　,　U=(Df−水位)×γw",
+    subst: buoy?`= ${fmt(buoy.Wst)} ⁄ ${fmt(buoy.U)}（U=(${fmt(d.Df)}−${fmt(d.w_hi)})×1.0）`:null,
+    govern: buoy?`施工期及格線 1.03 / 完工 1.07`:"",
+    naReason: buoy==null? "請填入基礎底深 Df、設計高水位與結構自重。":null,
+    premise:`高樓主體自重通常遠大於上舉力故安全；<b>非主體區（中庭、車道、裙樓）自重輕</b>，是上浮高風險區，須設抗拔樁或回填卵石壓載。`
+  }));
+
+  document.getElementById("checks").innerHTML=out.join("");
+  return {heaveGov,boilGov,upliftGov,buoy,baseGroups:bgArr};
+}
+
+function checkCard(o){
+  let badge, cls;
+  if(!o.on || o.fs==null){ badge=`<span class="badge na">N/A</span>`; cls="off"; }
+  else {
+    const r=o.fs/o.pass;
+    if(o.fs>=o.pass){badge=`<span class="badge ok">PASS</span>`;}
+    else if(r>=0.9){badge=`<span class="badge warn">邊際</span>`;}
+    else {badge=`<span class="badge bad">不足</span>`;}
+    cls="";
+  }
+  let body="";
+  if(o.on && o.fs!=null){
+    body=`
+      <div class="formula">${o.formula}</div>
+      ${o.subst?`<div class="subst">${o.subst}</div>`:""}
+      <div class="fsline"><span style="color:var(--ink-soft);font-size:12px">FS =</span><span class="big" style="color:${o.fs>=o.pass?'var(--ok)':(o.fs/o.pass>=0.9?'var(--warn)':'var(--bad)')}">${o.fs.toFixed(2)}</span><span class="pass">／ 及格 ${o.pass}</span></div>
+      ${o.govern?`<div class="govern">${o.govern}</div>`:""}
+      <div class="premise">${o.premise}</div>`;
+  } else {
+    body=`<div style="font-size:12.5px;color:var(--ink-soft);line-height:1.55">${o.naReason||o.cond}</div>
+      <div class="premise">${o.premise}</div>`;
+  }
+  return `<div class="check ${cls}">
+    <div class="check-h"><span class="nm">${o.nm}</span><span class="en">${o.en}</span>${badge}</div>
+    <div class="check-b">
+      <div style="font-size:11.5px;color:var(--ink-faint);margin-bottom:8px">${o.cond}</div>
+      ${body}
+    </div></div>`;
+}
+
+/* ============================================================
+   ⑤ 重點摘要
+   ============================================================ */
+function renderSummary(checkRes){
+  // weakest layer by N
+  let weak=null;
+  DATA.boreholes.forEach(b=>b.layers.forEach(l=>{ if(l.N!=null && baseGroup(l.uscs)!=="gravel"){ if(!weak||l.N<weak.N) weak={...l,bh:b.id}; }}));
+  const md=maxDepth(), de=num(DATA.design.De);
+  const bg=checkRes.baseGroups||[];
+  let mode = bg.includes("sand")?"砂湧（透水砂層）":(bg.includes("clay")?"隆起（軟弱黏土）":"—");
+
+  // governing FS list
+  let fsbits=[];
+  if(checkRes.heaveGov) fsbits.push(`隆起 FS≈${checkRes.heaveGov.FS.toFixed(2)}（${checkRes.heaveGov.b}）`);
+  if(checkRes.boilGov) fsbits.push(`砂湧 FS≈${checkRes.boilGov.FS.toFixed(2)}（${checkRes.boilGov.b}）`);
+  if(checkRes.upliftGov) fsbits.push(`上舉 FS≈${checkRes.upliftGov.FS.toFixed(2)}`);
+  if(checkRes.buoy) fsbits.push(`浮力 FS≈${checkRes.buoy.FS.toFixed(2)}`);
+
+  // groundwater note
+  let sepBH=[]; DATA.boreholes.forEach(b=>{ if(b.pz&&b.ow!=null&&Math.abs(b.pz.head-b.ow)>=2) sepBH.push(b.id); });
+
+  let lead = de!=null
+    ? `本案開挖深度 <b>${de}m</b>，底面落於 ${bg.map(g=>GROUP_LABEL[g]).join("／")} 層，主控破壞模式研判為 <b>${mode}</b>。`
+    : `尚未輸入開挖深度，請補齊設計參數以完成穩定研判。`;
+
+  // clay water-sensitivity statement (user's example)
+  let clayStmt="";
+  if(bg.includes("clay")){
+    clayStmt=`<p>底面為黏土層，<b>水位升降直接影響有效應力</b>：σ′=σ−u，水位每上升 1m，u 增 1 t/m²、σ′ 下降約 1 t/m²，而 Su≈(0.2~0.33)σ′ 隨之降低 → 地盤變軟、隆起餘裕縮小。施工期降水失敗或連日大雨使水位回升，原判定 FS 可能由 1.2 掉破 1.0。黏土層另須「快挖快撐」以縮短應力解除與吸水軟化時間。</p>`;
+  }
+
+  let html=`
+    <p class="lead">${lead}</p>
+    <div class="chips">
+      ${weak?`<span class="chip bad">最弱層 ${weak.bh} ${esc(weak.uscs)} N=${weak.N} @GL-${((weak.t+weak.b)/2).toFixed(1)}m</span>`:""}
+      ${fsbits.map(f=>`<span class="chip">${f}</span>`).join("")}
+      ${sepBH.length?`<span class="chip water">水壓分離 ${sepBH.join("、")} → 隔水層</span>`:""}
+    </div>
+    ${clayStmt}
+    <p style="font-size:13px;color:var(--ink-soft);margin-top:4px">下列「前提條件」若現場未落實，上述安全結論即失效——當作監督檢查表逐項確認：</p>
+    <ul class="checklist">
+      <li>地質改良：範圍是否覆蓋全開挖底面？深度是否打到設計值（連續壁底附近）？改良率/單壓強度達標？</li>
+      <li>設計水位：現場實測是否仍低於設計常時水位？是否已考慮鄰案停抽、暴雨回升？</li>
+      <li>地表超載：開挖邊緣機具/鋼筋堆置是否超過 q=${fmt(DATA.design.q)} t/m²？</li>
+      <li>連續壁規格：貫入深度 D=${fmt(DATA.design.D)}m 是否落實？接頭水密性（防局部管湧）？</li>
+      <li>降水/解壓：受壓砂層是否需設解壓井？是否採面內降水、埋設水壓計動態控管？</li>
+      <li>卵礫石層 N&gt;100 為假性高 N 值（鑽頭頂石），勿據以高估承載力；施工防型鋼偏斜、特米管阻塞。</li>
+    </ul>`;
+  document.getElementById("summary").innerHTML=html;
+}
+
+/* ============================================================
+   Header readout
+   ============================================================ */
+function renderHeader(){
+  document.getElementById("pName").textContent=DATA.name||"未命名專案";
+  document.getElementById("pLoc").textContent=DATA.loc||"";
+  const d=DATA.design, md=maxDepth();
+  const ros=[
+    ["鑽孔數",DATA.boreholes.length,"孔"],
+    ["最大孔深",md.toFixed(0),"m"],
+    ["開挖深度",fmt(d.De),"m"],
+    ["連續壁貫入",fmt(d.D),"m"],
+    ["常時水位","GL-"+fmt(d.w_no),"m"],
+    ["承壓水頭",d.confHead!=null?"GL-"+fmt(d.confHead):"—","m"]
+  ];
+  document.getElementById("readout").innerHTML=ros.map(r=>
+    `<div class="ro"><div class="k">${r[0]}</div><div class="v">${r[1]} <small>${r[1]==="—"?"":r[2]}</small></div></div>`).join("");
+}
+
+/* ============================================================
+   Render all
+   ============================================================ */
+function renderAll(){
+  const empty=!DATA.boreholes||DATA.boreholes.length===0;
+  document.getElementById("emptyState").style.display=empty?"block":"none";
+  // hide the five dashboard cards when empty so nothing is shown to others
+  document.querySelectorAll(".wrap > section.card").forEach(s=>s.style.display=empty?"none":"");
+  document.querySelector(".projhead").style.display=empty?"none":"";
+  if(empty){
+    const sel=document.getElementById("bhPick"); sel.innerHTML="";
+    return;
+  }
+  renderHeader();
+  renderStrata1();
+  // bh picker
+  const sel=document.getElementById("bhPick");
+  const cur=sel.value;
+  sel.innerHTML=DATA.boreholes.map(b=>`<option>${esc(b.id)}</option>`).join("");
+  if(cur&&DATA.boreholes.some(b=>b.id===cur)) sel.value=cur;
+  renderLogDetail();
+  renderGW();
+  const cr=renderChecks();
+  renderSummary(cr);
+}
+
+/* ============================================================
+   helpers
+   ============================================================ */
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function num(v){ if(v===""||v==null) return null; const n=parseFloat(v); return isNaN(n)?null:n; }
+function fmt(v){ const n=num(v); return n==null?"—":(Math.round(n*100)/100).toString(); }
+
+/* ============================================================
+   Edit drawer logic
+   ============================================================ */
+const overlay=document.getElementById("overlay"), drawer=document.getElementById("drawer");
+function openDrawer(){ buildEditForm(); overlay.classList.add("open"); drawer.classList.add("open"); }
+function closeDrawer(){ overlay.classList.remove("open"); drawer.classList.remove("open"); }
+document.getElementById("btnEdit").onclick=openDrawer;
+document.getElementById("btnCloseDrawer").onclick=closeDrawer;
+document.getElementById("btnDone").onclick=closeDrawer;
+overlay.onclick=closeDrawer;
+
+function buildEditForm(){
+  const d=DATA.design;
+  set("f_name",DATA.name); set("f_loc",DATA.loc);
+  set("f_de",d.De); set("f_D",d.D); set("f_q",d.q);
+  set("f_whi",d.w_hi); set("f_wno",d.w_no); set("f_wlo",d.w_lo);
+  set("f_wst",d.w_struct); set("f_df",d.Df); set("f_conf",d.confHead);
+  buildBHList();
+  document.getElementById("jsonEdit").value=JSON.stringify(DATA,null,1);
+}
+function set(id,v){document.getElementById(id).value=(v==null?"":v);}
+
+// bind design fields live
+["f_name","f_loc","f_de","f_D","f_q","f_whi","f_wno","f_wlo","f_wst","f_df","f_conf"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",()=>{
+    DATA.name=val("f_name"); DATA.loc=val("f_loc");
+    DATA.design.De=num(val("f_de")); DATA.design.D=num(val("f_D")); DATA.design.q=num(val("f_q"));
+    DATA.design.w_hi=num(val("f_whi")); DATA.design.w_no=num(val("f_wno")); DATA.design.w_lo=num(val("f_wlo"));
+    DATA.design.w_struct=num(val("f_wst")); DATA.design.Df=num(val("f_df")); DATA.design.confHead=num(val("f_conf"));
+    renderAll();
+  });
+});
+function val(id){return document.getElementById(id).value;}
+
+function buildBHList(){
+  const wrap=document.getElementById("bhEditList");
+  wrap.innerHTML=DATA.boreholes.map((b,bi)=>{
+    const rows=b.layers.map((l,li)=>`
+      <tr>
+        <td><input class="num" value="${l.t??""}" data-bi="${bi}" data-li="${li}" data-k="t" type="number" step="0.1"></td>
+        <td><input class="num" value="${l.b??""}" data-bi="${bi}" data-li="${li}" data-k="b" type="number" step="0.1"></td>
+        <td><input value="${esc(l.uscs??"")}" data-bi="${bi}" data-li="${li}" data-k="uscs"></td>
+        <td><input value="${esc(l.name??"")}" data-bi="${bi}" data-li="${li}" data-k="name"></td>
+        <td><input class="num" value="${l.N??""}" data-bi="${bi}" data-li="${li}" data-k="N" type="number"></td>
+        <td><input class="num" value="${l.Su??""}" data-bi="${bi}" data-li="${li}" data-k="Su" type="number" step="0.1"></td>
+        <td><input class="num" value="${l.gamma??""}" data-bi="${bi}" data-li="${li}" data-k="gamma" type="number" step="0.01"></td>
+        <td><select data-bi="${bi}" data-li="${li}" data-k="sample"><option value=""></option><option ${l.sample==="S"?"selected":""}>S</option><option ${l.sample==="T"?"selected":""}>T</option></select></td>
+        <td><button class="rm" data-rm-l="${bi}_${li}">✕</button></td>
+      </tr>`).join("");
+    return `<details class="bh-edit" ${bi===0?"open":""}>
+      <summary>${esc(b.id)} <span class="dl">${b.layers.length} 層 · 孔深 ${b.total??"—"}m · 水位 ${b.ow!=null?"GL-"+b.ow:"—"}</span>
+        <button class="rm" data-rm-bh="${bi}" title="刪除此孔">✕</button></summary>
+      <div class="inner">
+        <div class="grid3" style="margin-bottom:6px">
+          <div class="field"><label>孔號</label><input value="${esc(b.id)}" data-bi="${bi}" data-bk="id"></div>
+          <div class="field"><label>孔深 (m)</label><input class="num" value="${b.total??""}" data-bi="${bi}" data-bk="total" type="number" step="0.1"></div>
+          <div class="field"><label>觀測井 GL- (m)</label><input class="num" value="${b.ow??""}" data-bi="${bi}" data-bk="ow" type="number" step="0.1"></div>
+          <div class="field"><label>水壓計埋深 (m)</label><input class="num" value="${b.pz?b.pz.depth:""}" data-bi="${bi}" data-bk="pzd" type="number" step="0.1" placeholder="選填"></div>
+          <div class="field"><label>水壓計水頭 GL- (m)</label><input class="num" value="${b.pz?b.pz.head:""}" data-bi="${bi}" data-bk="pzh" type="number" step="0.1" placeholder="選填"></div>
+        </div>
+        <table class="layertbl">
+          <thead><tr><th>頂深</th><th>底深</th><th>USCS</th><th>名稱</th><th>N</th><th>Su</th><th>γ</th><th>取樣</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <button class="miniadd" data-add-l="${bi}">＋ 新增層</button>
+      </div>
+    </details>`;
+  }).join("");
+
+  // bind layer cell inputs
+  wrap.querySelectorAll("input[data-k],select[data-k]").forEach(el=>{
+    el.addEventListener("input",e=>{
+      const bi=+el.dataset.bi, li=+el.dataset.li, k=el.dataset.k;
+      let v=el.value;
+      if(["t","b","N","Su","gamma"].includes(k)) v=num(v);
+      DATA.boreholes[bi].layers[li][k]=v;
+      renderAll();
+    });
+  });
+  // bind borehole meta
+  wrap.querySelectorAll("input[data-bk]").forEach(el=>{
+    el.addEventListener("input",()=>{
+      const bi=+el.dataset.bi, k=el.dataset.bk, b=DATA.boreholes[bi];
+      if(k==="id") b.id=el.value;
+      else if(k==="total") b.total=num(el.value);
+      else if(k==="ow") b.ow=num(el.value);
+      else if(k==="pzd"||k==="pzh"){
+        const d=num(document.querySelector(`input[data-bi="${bi}"][data-bk="pzd"]`).value);
+        const h=num(document.querySelector(`input[data-bi="${bi}"][data-bk="pzh"]`).value);
+        b.pz=(d!=null||h!=null)?{depth:d,head:h}:null;
+      }
+      renderAll();
+    });
+  });
+  // add layer
+  wrap.querySelectorAll("[data-add-l]").forEach(btn=>btn.onclick=()=>{
+    const bi=+btn.dataset.addL; const ls=DATA.boreholes[bi].layers;
+    const last=ls[ls.length-1];
+    ls.push({t:last?last.b:0,b:(last?last.b:0)+2,uscs:"CL",name:"",N:null,gamma:1.85});
+    renderAll(); buildBHList();
+  });
+  // remove layer / bh
+  wrap.querySelectorAll("[data-rm-l]").forEach(btn=>btn.onclick=()=>{
+    const [bi,li]=btn.dataset.rmL.split("_").map(Number);
+    DATA.boreholes[bi].layers.splice(li,1); renderAll(); buildBHList();
+  });
+  wrap.querySelectorAll("[data-rm-bh]").forEach(btn=>btn.onclick=e=>{
+    e.preventDefault();
+    if(DATA.boreholes.length<=1){alert("至少保留一個鑽孔");return;}
+    DATA.boreholes.splice(+btn.dataset.rmBh,1); renderAll(); buildBHList();
+  });
+}
+
+document.getElementById("addBH").onclick=()=>{
+  const n=DATA.boreholes.length+1;
+  DATA.boreholes.push({id:"BH-"+n,total:30,ow:2,pz:null,
+    layers:[{t:0,b:1,uscs:"SF",name:"回填",N:4,gamma:1.8},{t:1,b:30,uscs:"CL",name:"黏土",N:4,Su:3,gamma:1.85,sample:"T"}]});
+  renderAll(); buildBHList();
+};
+
+document.getElementById("applyJson").onclick=()=>{
+  try{ const o=JSON.parse(document.getElementById("jsonEdit").value);
+    DATA=o; renderAll(); buildEditForm();
+    document.getElementById("saveMsg").textContent="JSON 已套用 ✓";
+  }catch(err){ alert("JSON 格式錯誤："+err.message); }
+};
+
+/* ============================================================
+   Toolbar: sample / import / export
+   ============================================================ */
+document.getElementById("bhPick").onchange=renderLogDetail;
+document.getElementById("btnSample").onclick=()=>{ DATA=JSON.parse(JSON.stringify(SAMPLE)); renderAll(); };
+document.getElementById("emptyDemo").onclick=()=>{ DATA=JSON.parse(JSON.stringify(SAMPLE)); renderAll(); };
+document.getElementById("emptyImport").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("emptyEdit").onclick=()=>{
+  if(!DATA.boreholes||!DATA.boreholes.length){
+    DATA.boreholes.push({id:"BH-1",total:30,ow:2,pz:null,
+      layers:[{t:0,b:1,uscs:"SF",name:"回填",N:4,gamma:1.8},{t:1,b:30,uscs:"CL",name:"黏土",N:4,Su:3,gamma:1.85,sample:"T"}]});
+    renderAll();
+  }
+  openDrawer();
+};
+function doExport(){
+  const blob=new Blob([JSON.stringify(DATA,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=(DATA.name||"borehole")+".json"; a.click(); URL.revokeObjectURL(a.href);
+}
+document.getElementById("btnExport").onclick=doExport;
+document.getElementById("btnExport2").onclick=doExport;
+document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
+document.getElementById("fileInput").onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>{ try{ DATA=JSON.parse(r.result); renderAll(); }catch(err){alert("讀取失敗："+err.message);} };
+  r.readAsText(f); e.target.value="";
+};
+
+/* init */
+renderAll();
+</script>
+</body>
+</html>
