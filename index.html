@@ -291,7 +291,7 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
       </div>
       <div class="grid3">
         <div class="field"><label>開挖深度 De (m)</label><input id="f_de" type="number" step="0.1"></div>
-        <div class="field"><label>擋土措施貫入 D (m)</label><input id="f_D" type="number" step="0.1"></div>
+        <div class="field"><label>擋土措施深度 D (m)</label><input id="f_D" type="number" step="0.1"></div>
         <div class="field"><label>地表超載 q (t/m²)</label><input id="f_q" type="number" step="0.5"></div>
         <div class="field"><label>設計高水位 GL- (m)</label><input id="f_whi" type="number" step="0.1"></div>
         <div class="field"><label>常時水位 GL- (m)</label><input id="f_wno" type="number" step="0.1"></div>
@@ -706,7 +706,7 @@ function renderChecks(){
 
   // hint
   const bgArr=[...baseGroups];
-  let hint = de==null ? `請先在「編輯資料」填入開挖深度 De、擋土措施貫入 D 與設計水位，FS 會即時計算。`
+  let hint = de==null ? `請先在「編輯資料」填入開挖深度 De、擋土措施深度 D 與設計水位，FS 會即時計算。`
     : `開挖底面（De=${de}m）所在土層：${bgArr.map(g=>GROUP_LABEL[g]).join(" / ")}。系統依此點亮對應破壞模式，並取各孔<b>最不利</b>者為主控。`;
   document.getElementById("checkHint").innerHTML=hint;
 
@@ -886,7 +886,7 @@ function renderHeader(){
     ["鑽孔數",DATA.boreholes.length,"孔"],
     ["最大孔深",md.toFixed(0),"m"],
     ["開挖深度",fmt(d.De),"m"],
-    ["擋土措施貫入",fmt(d.D),"m"],
+    ["擋土措施深度",fmt(d.D),"m"],
     ["常時水位","GL-"+fmt(d.w_no),"m"],
     ["承壓水頭",d.confHead!=null?"GL-"+fmt(d.confHead):"—","m"]
   ];
