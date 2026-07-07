@@ -59,6 +59,7 @@ select.tbtn option{background:#1B2530;color:#EDEFEC}
 section.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:18px;overflow:hidden}
 .card-h{display:flex;align-items:baseline;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:linear-gradient(var(--panel),var(--panel-2))}
 .card-h .idx{font-family:var(--mono);font-size:12px;font-weight:600;color:#fff;background:var(--ink);width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;align-self:center}
+.card-h .idx-sub{width:auto;min-width:24px;padding:0 6px;font-size:11px;letter-spacing:.02em}
 .card-h h2{font-size:16px}
 .card-h .en{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase}
 .card-h .note{margin-left:auto;font-size:11.5px;color:var(--ink-soft);font-family:var(--mono)}
@@ -114,6 +115,33 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
 .checklist li:before{content:none}
 .dot{position:absolute;left:5px;top:9px;font-size:14px;line-height:1}
 .dot-bad{color:var(--bad)}.dot-warn{color:var(--warn)}.dot-ok{color:var(--ok)}.dot-na{color:var(--ink-faint)}
+
+/* ---- AI 圖片轉錄 ---- */
+.aiblock{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.aihead{font-size:12px;font-weight:700;letter-spacing:.05em;margin-bottom:4px}
+.aihead .en{font-weight:400;color:var(--ink-faint);font-size:10.5px;margin-left:6px}
+.dropzone{border:1.5px dashed var(--line);border-radius:8px;padding:16px 12px;text-align:center;
+  font-size:12px;color:var(--ink-soft);cursor:pointer;background:var(--panel-2);transition:border-color .15s}
+.dropzone:focus,.dropzone.over{border-color:var(--ink);outline:none;color:var(--ink)}
+.aithumb{position:relative;width:74px;height:52px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.aithumb img{width:100%;height:100%;object-fit:cover}
+.aithumb .rm{position:absolute;top:1px;right:1px;background:rgba(0,0,0,.55);color:#fff;border:none;
+  border-radius:4px;width:16px;height:16px;font-size:10px;line-height:1;cursor:pointer;padding:0}
+
+/* ---- Reference boreholes (1-2) ---- */
+.refbadge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;
+  color:var(--ink-soft);border:1px dashed var(--ink-faint);border-radius:4px;padding:1px 6px;vertical-align:1px}
+.srcline{font-size:11.5px;color:var(--ink-soft);margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.cmp-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.cmp-table th,.cmp-table td{border:1px solid var(--line-soft);padding:6px 9px;text-align:center;white-space:nowrap}
+.cmp-table th{background:var(--panel-2);font-weight:600;font-size:11px;letter-spacing:.04em;color:var(--ink-soft)}
+.cmp-table td.mono{font-family:var(--mono)}
+.cmp-table td.hd{text-align:left;font-weight:600;max-width:210px;overflow:hidden;text-overflow:ellipsis}
+.cmp-table .sub{display:block;font-weight:400;font-size:10.5px;color:var(--ink-faint);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+td.cflag-warn{background:#F6ECD9;color:#8a5f14;font-weight:600}
+td.cflag-bad{background:#F3DDDD;color:var(--bad);font-weight:600}
+.cmp-lead{font-size:13px;margin:0 0 10px}
+.cmp-lead b.bad{color:var(--bad)} .cmp-lead b.ok{color:var(--ok)}
 
 /* ---- Edit drawer ---- */
 .overlay{position:fixed;inset:0;background:rgba(20,30,40,.45);z-index:60;display:none}
@@ -218,6 +246,20 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
     </div>
   </section>
 
+  <!-- 1-2 周邊參考鑽孔比對（地調所工程地質探勘資料庫），緊貼 ① 便於對照 -->
+  <section class="card" id="refCard" style="display:none">
+    <div class="card-h">
+      <span class="idx idx-sub">1-2</span>
+      <h2>周邊參考鑽孔比對</h2>
+      <span class="en">Nearby Reference Boreholes</span>
+      <span class="note" id="refNote"></span>
+    </div>
+    <div class="card-b">
+      <div id="refCompare"></div>
+      <div class="srcline">來源：經濟部地質調查及礦業管理中心「工程地質探勘資料庫」。差異旗標為<b>比對提示</b>，非自動判定；參考孔不參與 ④ 穩定檢核。資料內容如與原書面報告不符，以原書面為準。</div>
+    </div>
+  </section>
+
   <!-- ② 柱狀圖逐孔詳圖 -->
   <section class="card">
     <div class="card-h">
@@ -231,6 +273,7 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
         <span style="margin-left:auto;color:var(--ink-faint)">取樣：S 劈管（擾動） · T 薄管（不擾動）</span>
       </div>
       <div class="scroller"><div id="logDetail"></div></div>
+      <div class="srcline" id="logSrc"></div>
     </div>
   </section>
 
@@ -270,7 +313,9 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
     <div class="card-b summary" id="summary"></div>
   </section>
 
-  <div class="foot">逐孔判讀 · 簡化表僅作檢核 · 卵礫石層 N&gt;100 需防假性高 N 值　|　純前端，資料以 JSON 在本機進出，不上傳</div>
+  <!-- （1-2 周邊參考鑽孔比對卡片已移至 ① 下方） -->
+
+  <div class="foot">逐孔判讀 · 簡化表僅作檢核 · 卵礫石層 N&gt;100 需防假性高 N 值　|　純前端，資料以 JSON 在本機進出，不上傳（例外：AI 圖片轉錄為 opt-in，圖片傳送至 Anthropic API）</div>
 </div>
 
 <!-- ===== Edit drawer ===== -->
@@ -306,6 +351,43 @@ section.card{background:var(--panel);border:1px solid var(--line);border-radius:
       <h3>鑽孔資料 <span class="en">Boreholes</span></h3>
       <div id="bhEditList"></div>
       <button class="miniadd" id="addBH">＋ 新增鑽孔</button>
+    </div>
+
+    <div class="fset">
+      <h3>周邊參考鑽孔 <span class="en">GSMMA Reference</span></h3>
+      <div class="hint">由地調所「工程地質探勘資料庫」取得之周邊孔，<b>僅供 ①、1-2 與 ② 比對</b>，不參與穩定檢核。可用 <span class="mono">tools/gsmma_nearby.py</span> 從縣市 MDB 產出 <span class="mono">ref-boreholes.json</span> 後在此匯入。</div>
+      <div id="refEditList"></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="miniadd" id="btnImportRef">＋ 匯入參考孔 JSON</button>
+        <button class="miniadd" id="btnClearRef" style="display:none">清除全部參考孔</button>
+      </div>
+      <input type="file" id="refFileInput" accept=".json" style="display:none">
+
+      <!-- AI 圖片轉錄：柱狀圖截圖 → 參考孔 JSON（瀏覽器直連 Anthropic API，opt-in） -->
+      <div class="aiblock">
+        <div class="aihead">AI 圖片轉錄 <span class="en">Log image → JSON</span></div>
+        <div class="hint">貼上或拖放<b>同一支孔</b>的柱狀圖截圖（可多頁），AI 依本工具的判讀規則轉成參考孔 JSON，預覽確認後匯入。
+        <b>注意：圖片將傳送至 Anthropic API 進行辨識</b>——僅建議用於公開資料庫的柱狀圖；本案機密鑽探報告請維持人工輸入。金鑰只存於你的瀏覽器，不會寫入匯出檔。</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0">
+          <input type="password" id="aiKey" placeholder="Anthropic API 金鑰（sk-ant-…）" style="flex:1;min-width:200px;font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px">
+          <label style="font-size:11.5px;color:var(--ink-soft);display:flex;gap:4px;align-items:center"><input type="checkbox" id="aiKeyRemember">記住金鑰（此瀏覽器）</label>
+        </div>
+        <div class="dropzone" id="aiDrop" tabindex="0">點此後 Ctrl+V 貼上截圖，或將圖片拖放到這裡（同一孔、最多 5 頁）</div>
+        <div id="aiThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="miniadd" id="btnAiConvert" disabled>🔍 轉錄此孔</button>
+          <span id="aiStatus" style="font-size:12px;color:var(--ink-soft)"></span>
+        </div>
+        <div id="aiPreview" style="display:none;margin-top:8px">
+          <div id="aiSummary" style="font-size:12.5px;margin-bottom:6px"></div>
+          <textarea class="jsonbox" id="aiJson" spellcheck="false" style="min-height:140px"></textarea>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="miniadd" id="btnAiImport">✓ 匯入此參考孔</button>
+            <button class="miniadd" id="btnAiDiscard">捨棄</button>
+          </div>
+          <div class="hint">匯入前請抽核幾個層界深度與 N 值——AI 轉錄準確率高但非百分之百，層界數字錯一位就是兩公尺的事。</div>
+        </div>
+      </div>
     </div>
 
     <div class="fset">
@@ -403,8 +485,11 @@ function loadDemo(i){ DATA=JSON.parse(JSON.stringify(DEMOS[i].data)); renderAll(
 const EMPTY = {
   name:"", loc:"",
   design:{ De:null, D:null, q:2, w_hi:null, w_no:null, w_lo:null, w_struct:null, Df:null, confHead:null, Nc:5.7 },
-  boreholes:[]
+  boreholes:[],
+  refBoreholes:[]   // 地調所工程地質探勘資料庫之周邊參考孔（僅供比對，不進入穩定檢核）
 };
+function refs(){ return DATA.refBoreholes||[]; }
+function holeDepth(b){ return b.total || (b.layers.length?Math.max(...b.layers.map(l=>l.b)):0); }
 
 let DATA = JSON.parse(JSON.stringify(EMPTY));
 const GW = 1.0; // 水單位重 t/m³
@@ -454,17 +539,23 @@ function rectFill(uscs){
 /* ============================================================
    ① 簡化地層比較圖
    ============================================================ */
-function maxDepth(){if(!DATA.boreholes||!DATA.boreholes.length)return 0;return Math.max(...DATA.boreholes.map(b=>b.total||Math.max(...b.layers.map(l=>l.b))));}
+function maxDepth(){
+  const all=[...(DATA.boreholes||[]),...refs()];
+  if(!all.length)return 0;
+  return Math.max(...all.map(holeDepth));
+}
 
 function renderStrata1(){
   const md=maxDepth();
   const H=480, padTop=14, padBot=14, usable=H-padTop-padBot;
   const scale=usable/md;
-  const colW=120, gap=18, axisW=42;
+  const colW=120, gap=18, axisW=42, divW=refs().length?26:0;
   const de=num(DATA.design.De), D=num(DATA.design.D);
   const wallTip=D!=null?D:null;
+  const nProj=DATA.boreholes.length, nRef=refs().length;
 
-  let svg=`<svg width="${axisW+ (colW+gap)*DATA.boreholes.length}" height="${H}" font-family="var(--mono)">${svgDefs()}`;
+  const totalW=axisW+(colW+gap)*nProj+divW+(colW+gap)*nRef;
+  let svg=`<svg width="${totalW}" height="${H}" font-family="var(--mono)">${svgDefs()}`;
   // depth axis
   svg+=`<g>`;
   for(let z=0;z<=md;z+=5){
@@ -474,10 +565,11 @@ function renderStrata1(){
   }
   svg+=`<text x="6" y="${padTop+4}" font-size="9" fill="var(--ink-faint)">GL-m</text></g>`;
 
-  DATA.boreholes.forEach((b,i)=>{
-    const x=axisW+i*(colW+gap);
-    svg+=`<g transform="translate(${x},0)">`;
-    svg+=`<text x="${colW/2}" y="11" font-size="11" font-weight="600" text-anchor="middle" fill="var(--ink)">${esc(b.id)}</text>`;
+  // shared column renderer；isRef 時以虛線外框＋淡化標示區別
+  function drawCol(b,x,isRef){
+    const hd=holeDepth(b);
+    svg+=`<g transform="translate(${x},0)"${isRef?' opacity=".92"':''}>`;
+    svg+=`<text x="${colW/2}" y="11" font-size="11" font-weight="600" text-anchor="middle" fill="${isRef?'var(--ink-soft)':'var(--ink)'}">${esc(b.id)}</text>`;
     b.layers.forEach(l=>{
       const y=padTop+l.t*scale, h=Math.max((l.b-l.t)*scale,1);
       const fa=isDual(l.uscs)?`fill="url(#dual)" style="color:${fillFor(l.uscs)}"`:`fill="${rectFill(l.uscs)}"`;
@@ -487,16 +579,28 @@ function renderStrata1(){
         svg+=`<text x="${colW-5}" y="${y+13}" font-size="9" text-anchor="end" fill="rgba(0,0,0,.6)">${(l.b-l.t).toFixed(1)}m</text>`;
       }
     });
-    // water table (ow)
     if(b.ow!=null){const yw=padTop+b.ow*scale;
       svg+=`<line x1="0" y1="${yw}" x2="${colW}" y2="${yw}" stroke="var(--water)" stroke-width="1.4" stroke-dasharray="4 2"/>`;
       svg+=`<path d="M3 ${yw} l5 6 l5 -6 z" fill="var(--water)"/>`;
     }
+    if(isRef){
+      svg+=`<rect x="-2" y="${padTop-2}" width="${colW+4}" height="${hd*scale+4}" fill="none" stroke="var(--ink-faint)" stroke-width="1.1" stroke-dasharray="5 3"/>`;
+      const dist=b.src&&b.src.dist!=null?`${Math.round(b.src.dist)}m`:"";
+      svg+=`<text x="${colW/2}" y="${padTop+hd*scale+13}" font-size="8.5" text-anchor="middle" fill="var(--ink-faint)">參考${dist?" · "+dist:""}</text>`;
+    }
     svg+=`</g>`;
-  });
+  }
 
-  // span reference lines across all holes
-  const fullW=axisW+(colW+gap)*DATA.boreholes.length-gap;
+  DATA.boreholes.forEach((b,i)=>drawCol(b,axisW+i*(colW+gap),false));
+  const refX0=axisW+(colW+gap)*nProj+divW;
+  if(nRef){
+    const dx=axisW+(colW+gap)*nProj-gap+divW/2+gap/2;
+    svg+=`<line x1="${dx}" y1="${padTop-4}" x2="${dx}" y2="${H-padBot}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 4"/>`;
+    refs().forEach((b,i)=>drawCol(b,refX0+i*(colW+gap),true));
+  }
+
+  // span reference lines across all holes (含參考孔，便於直接比對)
+  const fullW=totalW-gap;
   if(de!=null){const y=padTop+de*scale;
     svg+=`<line x1="${axisW}" y1="${y}" x2="${fullW}" y2="${y}" stroke="var(--bad)" stroke-width="1.6"/>`;
     svg+=`<text x="${fullW}" y="${y-4}" font-size="9.5" text-anchor="end" fill="var(--bad)" font-weight="600">開挖底面 De=${de}m</text>`;
@@ -509,7 +613,7 @@ function renderStrata1(){
   document.getElementById("strata1").innerHTML=svg;
 
   // legend (groups present)
-  const present=new Set(); DATA.boreholes.forEach(b=>b.layers.forEach(l=>present.add(baseGroup(l.uscs))));
+  const present=new Set(); [...DATA.boreholes,...refs()].forEach(b=>b.layers.forEach(l=>present.add(baseGroup(l.uscs))));
   let lg="";
   ["fill","clay","silt","sand","gravel"].forEach(g=>{ if(present.has(g))
     lg+=`<span><i style="background:${COLOR[g]}"></i>${GROUP_LABEL[g]}</span>`; });
@@ -517,8 +621,9 @@ function renderStrata1(){
   lg+=`<span><i style="border-color:var(--water);border-style:dashed"></i>地下水位</span>`;
   lg+=`<span><i style="background:var(--bad)"></i>開挖底面</span>`;
   lg+=`<span><i style="border-color:var(--ink);border-style:dashed"></i>擋土壁趾</span>`;
+  if(refs().length) lg+=`<span><i style="border-color:var(--ink-faint);border-style:dashed;background:transparent"></i>地調所參考孔（虛線框）</span>`;
   document.getElementById("legend1").innerHTML=lg;
-  document.getElementById("note1").textContent=`${DATA.boreholes.length} 孔 · 共用深度尺 0–${md}m`;
+  document.getElementById("note1").textContent=`本案 ${DATA.boreholes.length} 孔`+(refs().length?` ＋ 參考 ${refs().length} 孔`:"")+` · 共用深度尺 0–${md}m`;
 }
 
 /* ============================================================
@@ -526,8 +631,19 @@ function renderStrata1(){
    ============================================================ */
 function renderLogDetail(){
   const sel=document.getElementById("bhPick");
-  const b=DATA.boreholes.find(x=>x.id===sel.value)||DATA.boreholes[0];
-  if(!b){document.getElementById("logDetail").innerHTML="";return;}
+  const v=sel.value||"";
+  const isRef=v.startsWith("ref:");
+  const key=isRef?v.slice(4):v;
+  const b=(isRef?refs():DATA.boreholes).find(x=>x.id===key)||DATA.boreholes[0];
+  if(!b){document.getElementById("logDetail").innerHTML="";document.getElementById("logSrc").innerHTML="";return;}
+  const srcEl=document.getElementById("logSrc");
+  if(isRef&&b.src){
+    const s=b.src, bits=[];
+    if(s.dist!=null)bits.push(`距基地約 ${Math.round(s.dist)} m`);
+    if(s.proj)bits.push(esc(s.proj));
+    if(s.year)bits.push(esc(String(s.year)));
+    srcEl.innerHTML=`<span class="refbadge">參考孔</span> 來源：工程地質探勘資料庫（地調所）${bits.length?" · "+bits.join(" · "):""}　<span style="color:var(--ink-faint)">資料如與原書面報告不符，以原書面為準</span>`;
+  } else srcEl.innerHTML="";
   const md=b.total||Math.max(...b.layers.map(l=>l.b));
   const H=Math.max(520, md*9+40), padTop=24, scale=(H-padTop-16)/md;
   const axisW=40, colW=150, nW=210, nMax=60;
@@ -880,6 +996,114 @@ function renderSummary(checkRes){
 /* ============================================================
    Header readout
    ============================================================ */
+/* ============================================================
+   1-2 周邊參考鑽孔比對
+   對每支參考孔計算錨定指標，與本案孔群的 min–max 範圍比對：
+   深度類指標超出範圍 >2m 亮黃旗、>5m 亮紅旗；
+   開挖底面土層類別與本案所有孔皆不同者亮紅旗。
+   僅提示差異，不做工程判定。
+   ============================================================ */
+// 只認「沖積成因卵礫石層」作為礫石面：USCS 為礫石 或 描述含「卵礫石」，
+// 但排除回填層，以及岩盤頂部的岩塊／風化帶（描述含 岩塊/岩/風化，或 USCS 為岩層 SST/SH/RK）。
+// 例：BH-9 的 GM「岩塊夾細砂」屬風化岩帶，不應計入礫石面。
+function isRockLayer(l){
+  const n=l.name||"", u=(l.uscs||"").toUpperCase();
+  return /岩塊|風化|岩$|岩[，,、]|砂岩|頁岩|泥岩|凝灰岩/.test(n) || /^(SST|SH|MST|RK|ROCK)/.test(u);
+}
+function isAlluvialGravel(l){
+  if(baseGroup(l.uscs)==="fill") return false;      // 回填含卵礫石不算
+  if(isRockLayer(l)) return false;                  // 岩塊／風化帶不算
+  return baseGroup(l.uscs)==="gravel" || /卵礫石|礫石層|礫石/.test(l.name||"");
+}
+function gravelTop(b){ const l=b.layers.find(isAlluvialGravel); return l?l.t:null; }
+function nNearDe(b,de){ // De±2m 範圍內各層 N 之平均（N>100 以 100 計）
+  if(de==null)return null;
+  const hit=b.layers.filter(l=>l.b>de-2&&l.t<de+2&&l.N!=null);
+  if(!hit.length)return null;
+  return hit.reduce((s,l)=>s+Math.min(l.N,100),0)/hit.length;
+}
+function holeMetrics(b,de){
+  return {
+    depth: holeDepth(b),
+    ow: b.ow!=null?b.ow:null,
+    baseSoil: (de!=null&&de<=holeDepth(b))?baseGroup(layerAt(b,de).uscs):null,
+    gravelTop: gravelTop(b),
+    nDe: nNearDe(b,de)
+  };
+}
+function rng(arr){ const v=arr.filter(x=>x!=null); if(!v.length)return null; return [Math.min(...v),Math.max(...v)]; }
+function depthFlag(v,range){ // 回傳 ""|"warn"|"bad"
+  if(v==null||range==null)return "";
+  const out=v<range[0]?range[0]-v:(v>range[1]?v-range[1]:0);
+  return out>5?"bad":(out>2?"warn":"");
+}
+function fmtRange(r,unit){ if(!r)return "—"; return r[0]===r[1]?fmt(r[0])+(unit||""):`${fmt(r[0])}~${fmt(r[1])}${unit||""}`; }
+
+function renderRefCompare(){
+  const card=document.getElementById("refCard");
+  const R=refs();
+  if(!R.length||!DATA.boreholes.length){ card.style.display="none"; return; }
+  card.style.display="";
+  const de=num(DATA.design.De);
+  const pm=DATA.boreholes.map(b=>holeMetrics(b,de));
+  const range={
+    depth: rng(pm.map(m=>m.depth)),
+    ow:    rng(pm.map(m=>m.ow)),
+    gravelTop: rng(pm.map(m=>m.gravelTop)),
+    nDe:   rng(pm.map(m=>m.nDe))
+  };
+  const projSoils=new Set(pm.map(m=>m.baseSoil).filter(Boolean));
+
+  let flagged=0;
+  const rows=R.map(b=>{
+    const m=holeMetrics(b,de);
+    const f={
+      depth: (range.depth&&m.depth!=null&&m.depth<range.depth[0]-2)?"warn":"", // 參考孔較深不是問題；明顯較淺才提示
+      ow: depthFlag(m.ow,range.ow),
+      gravelTop: depthFlag(m.gravelTop,range.gravelTop),
+      soil: (m.baseSoil&&projSoils.size&&!projSoils.has(m.baseSoil))?"bad":"",
+      nDe: (m.nDe!=null&&range.nDe&&(m.nDe<range.nDe[0]*0.5||m.nDe>range.nDe[1]*2))?"warn":""
+    };
+    // 卵礫石面「本案有、參考孔孔深內未見」也值得提示
+    if(m.gravelTop==null&&range.gravelTop&&m.depth>=range.gravelTop[1]) f.gravelTop="warn";
+    const anyFlag=Object.values(f).some(x=>x);
+    if(anyFlag)flagged++;
+    const s=b.src||{};
+    const cell=(v,fl,unit)=>`<td class="mono${fl?" cflag-"+fl:""}">${v==null?"—":(typeof v==="number"?fmt(v):esc(v))}${v!=null&&unit?unit:""}</td>`;
+    return `<tr>
+      <td class="hd">${esc(b.id)}${s.proj?`<span class="sub" title="${esc(s.proj)}">${esc(s.proj)}</span>`:""}</td>
+      <td class="mono">${s.dist!=null?Math.round(s.dist)+" m":"—"}</td>
+      ${cell(m.depth,f.depth," m")}
+      ${cell(m.ow,f.ow," m")}
+      ${cell(m.baseSoil?GROUP_LABEL[m.baseSoil]:null,f.soil,"")}
+      ${cell(m.gravelTop,f.gravelTop," m")}
+      ${cell(m.nDe!=null?Math.round(m.nDe):null,f.nDe,"")}
+    </tr>`;
+  }).join("");
+
+  const lead = flagged===0
+    ? `<p class="cmp-lead"><b class="ok">✓</b> ${R.length} 支參考孔的錨定指標皆落在本案孔群範圍內（±2m），初步顯示基地地層與周邊一致。</p>`
+    : `<p class="cmp-lead"><b class="bad">⚑</b> ${R.length} 支參考孔中有 <b class="bad">${flagged} 支</b>出現差異旗標——請回到 ① 比較圖與 ② 詳圖逐孔確認，並於鑽探報告中查證該方向的地層變化。</p>`;
+
+  document.getElementById("refCompare").innerHTML=lead+`
+    <div class="scroller"><table class="cmp-table">
+      <thead><tr>
+        <th style="text-align:left">參考孔 · 來源計畫</th><th>距離</th><th>孔深</th><th>水位 GL-</th>
+        <th>De${de!=null?"="+fmt(de)+"m":""} 處土層</th><th>卵礫石面 GL-</th><th>N 值 (De±2m)</th>
+      </tr>
+      <tr style="color:var(--ink-faint);font-weight:400">
+        <th style="text-align:left">本案範圍（${DATA.boreholes.length} 孔）</th><th>—</th>
+        <th class="mono">${fmtRange(range.depth," m")}</th>
+        <th class="mono">${fmtRange(range.ow," m")}</th>
+        <th class="mono">${[...projSoils].map(g=>GROUP_LABEL[g]).join("、")||"—"}</th>
+        <th class="mono">${fmtRange(range.gravelTop," m")}</th>
+        <th class="mono">${range.nDe?fmtRange(range.nDe.map(Math.round),""):"—"}</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  document.getElementById("refNote").textContent=`${R.length} 支參考孔 · 黃旗 >2m / 紅旗 >5m 或土層類別不同`;
+}
+
 function renderHeader(){
   document.getElementById("pName").textContent=DATA.name||"未命名專案";
   document.getElementById("pLoc").textContent=DATA.loc||"";
@@ -900,6 +1124,7 @@ function renderHeader(){
    Render all
    ============================================================ */
 function renderAll(){
+  DATA.refBoreholes=DATA.refBoreholes||[]; // 舊版 JSON／示範資料相容
   const empty=!DATA.boreholes||DATA.boreholes.length===0;
   document.getElementById("emptyState").style.display=empty?"block":"none";
   // hide the five dashboard cards when empty so nothing is shown to others
@@ -911,15 +1136,19 @@ function renderAll(){
   }
   renderHeader();
   renderStrata1();
-  // bh picker
+  // bh picker：本案孔與參考孔分組
   const sel=document.getElementById("bhPick");
   const cur=sel.value;
-  sel.innerHTML=DATA.boreholes.map(b=>`<option>${esc(b.id)}</option>`).join("");
-  if(cur&&DATA.boreholes.some(b=>b.id===cur)) sel.value=cur;
+  let opts=DATA.boreholes.map(b=>`<option value="${esc(b.id)}">${esc(b.id)}</option>`).join("");
+  if(refs().length)
+    opts+=`<optgroup label="地調所參考孔">`+refs().map(b=>`<option value="ref:${esc(b.id)}">${esc(b.id)}（參考）</option>`).join("")+`</optgroup>`;
+  sel.innerHTML=opts;
+  if(cur&&[...sel.options].some(o=>o.value===cur)) sel.value=cur;
   renderLogDetail();
   renderGW();
   const cr=renderChecks();
   renderSummary(cr);
+  renderRefCompare();
 }
 
 /* ============================================================
@@ -947,8 +1176,199 @@ function buildEditForm(){
   set("f_whi",d.w_hi); set("f_wno",d.w_no); set("f_wlo",d.w_lo);
   set("f_wst",d.w_struct); set("f_df",d.Df); set("f_conf",d.confHead);
   buildBHList();
+  buildRefList();
   document.getElementById("jsonEdit").value=JSON.stringify(DATA,null,1);
 }
+
+/* ---- 參考孔清單與匯入 ---- */
+function buildRefList(){
+  const wrap=document.getElementById("refEditList");
+  const R=refs();
+  document.getElementById("btnClearRef").style.display=R.length?"":"none";
+  wrap.innerHTML=R.length?R.map((b,i)=>{
+    const s=b.src||{};
+    return `<div class="refrow" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line-soft);font-size:12.5px">
+      <span class="mono" style="font-weight:600">${esc(b.id)}</span>
+      <span style="color:var(--ink-soft)">孔深 ${fmt(holeDepth(b))}m${s.dist!=null?" · 距 "+Math.round(s.dist)+"m":""}</span>
+      <span style="color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1" title="${esc(s.proj||"")}">${esc(s.proj||"")}</span>
+      <button class="rm" data-rm-ref="${i}">✕</button>
+    </div>`;
+  }).join(""):`<div style="font-size:12px;color:var(--ink-faint);padding:4px 0">尚未匯入參考孔</div>`;
+  wrap.querySelectorAll("[data-rm-ref]").forEach(btn=>btn.onclick=()=>{
+    DATA.refBoreholes.splice(+btn.dataset.rmRef,1); renderAll(); buildRefList();
+  });
+}
+function importRefFile(file){
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const o=JSON.parse(r.result);
+      const incoming=Array.isArray(o)?o:(o.refBoreholes||o.boreholes||[]);
+      if(!Array.isArray(incoming)||!incoming.length) throw new Error("找不到 refBoreholes 陣列");
+      const bad=incoming.find(b=>!b.id||!Array.isArray(b.layers));
+      if(bad) throw new Error("參考孔缺少 id 或 layers");
+      DATA.refBoreholes=DATA.refBoreholes||[];
+      incoming.forEach(nb=>{
+        const j=DATA.refBoreholes.findIndex(x=>x.id===nb.id);
+        if(j>=0)DATA.refBoreholes[j]=nb; else DATA.refBoreholes.push(nb);
+      });
+      renderAll(); buildRefList();
+      document.getElementById("saveMsg").textContent=`已匯入 ${incoming.length} 支參考孔 ✓`;
+    }catch(err){ alert("參考孔匯入失敗："+err.message); }
+  };
+  r.readAsText(file);
+}
+document.getElementById("btnImportRef").onclick=()=>document.getElementById("refFileInput").click();
+document.getElementById("refFileInput").onchange=e=>{
+  const f=e.target.files[0]; if(f) importRefFile(f); e.target.value="";
+};
+document.getElementById("btnClearRef").onclick=()=>{
+  if(confirm("清除全部參考孔？（不影響本案孔）")){ DATA.refBoreholes=[]; renderAll(); buildRefList(); }
+};
+
+/* ============================================================
+   AI 圖片轉錄：柱狀圖截圖 → 參考孔 JSON
+   瀏覽器直連 Anthropic API（anthropic-dangerous-direct-browser-access），
+   金鑰由使用者提供、僅存於本瀏覽器。圖片會傳送至 API——僅用於公開資料。
+   ============================================================ */
+const AI_MODEL="claude-sonnet-4-6";
+const AI_SYS=`你是台灣大地工程的鑽探柱狀圖轉錄員。使用者會提供同一支鑽孔的「鑽孔地質柱狀圖」圖片（可能多頁，來自地調所工程地質探勘資料庫查詢系統）。請嚴格依下列規則轉錄成 JSON。
+
+【表頭欄位】鑽孔編號→id（加前綴 "GEO-"）；深度→total（公尺）；地下水位→ow（GL- 公尺）；坐標 E→src.x、坐標 N→src.y（TWD97）；鑽孔標高→src.elev；地點與鑽探公司合併→src.proj（格式「地點調查案 · 公司名」）；日期→src.year（民國年轉西元，格式「西元年（民國XXX/MM/DD–MM/DD）」）；src.db 固定為「工程地質探勘資料庫（地調所）」；src.dist 固定 null。
+
+【層次】依描述欄旁的層界深度標註（如「3.20 M」）切層；t=層頂、b=層底（GL- 公尺）；首層 t=0、末層 b=total；層依深度排序不重疊。name 寫「顏色＋土性＋稠度或緊密度」；岩層附回收率與 RQD 範圍。
+
+【USCS】圖上有統一土壤分類就照抄；沒有則依描述推定：回填/表土→SF、黏土→CL、粉土→ML、粉土質砂→SM、卵礫石→GP、砂岩→SST、頁岩→SH、泥岩→MST。
+
+【N 值】標準貫入欄 a+b+c 三段擊數，N=b+c（後兩段和）；「50/x」「100/x」或含 100 之拒貫記 100；一層內多筆取平均後四捨五入為整數；該層無取樣記 null；跨層界的樣本依粒徑組成與描述歸入性質相符的層。
+
+【note】把你的判讀裁量（歸層決定、拒貫處理、代表值選擇）寫進頂層 note 欄位，並以「如與原書面報告不符，以原書面為準。」結尾。
+
+【輸出】只輸出 JSON 本體，不要 markdown 圍欄、不要任何說明文字。結構：
+{"refBoreholes":[{"id":"GEO-孔號","total":數,"ow":數或null,"layers":[{"t":數,"b":數,"uscs":"...","name":"...","N":整數或null}],"src":{"db":"...","proj":"...","year":"...","dist":null,"x":數,"y":數,"elev":數}}],"note":"..."}`;
+
+let aiImages=[]; // {mediaType, b64, url}
+
+function aiSetStatus(msg){ document.getElementById("aiStatus").textContent=msg; }
+function aiRenderThumbs(){
+  const box=document.getElementById("aiThumbs");
+  box.innerHTML=aiImages.map((im,i)=>
+    `<div class="aithumb"><img src="${im.url}" alt="page${i+1}"><button class="rm" data-ai-rm="${i}">✕</button></div>`).join("");
+  box.querySelectorAll("[data-ai-rm]").forEach(b=>b.onclick=()=>{aiImages.splice(+b.dataset.aiRm,1);aiRenderThumbs();});
+  document.getElementById("btnAiConvert").disabled=!aiImages.length;
+}
+function aiAddFile(file){
+  if(!file||!file.type.startsWith("image/"))return;
+  if(aiImages.length>=5){alert("最多 5 頁（同一支孔）。");return;}
+  const r=new FileReader();
+  r.onload=()=>{
+    const url=r.result;                        // data:image/png;base64,....
+    const m=url.match(/^data:(image\/[a-z+]+);base64,(.*)$/s);
+    if(!m){alert("無法讀取圖片格式");return;}
+    aiImages.push({mediaType:m[1],b64:m[2],url});
+    aiRenderThumbs();
+  };
+  r.readAsDataURL(file);
+}
+const aiDrop=document.getElementById("aiDrop");
+aiDrop.onclick=()=>aiDrop.focus();
+aiDrop.addEventListener("paste",e=>{
+  [...(e.clipboardData||{}).items||[]].forEach(it=>{ if(it.type.startsWith("image/")) aiAddFile(it.getAsFile()); });
+});
+aiDrop.addEventListener("dragover",e=>{e.preventDefault();aiDrop.classList.add("over");});
+aiDrop.addEventListener("dragleave",()=>aiDrop.classList.remove("over"));
+aiDrop.addEventListener("drop",e=>{
+  e.preventDefault();aiDrop.classList.remove("over");
+  [...e.dataTransfer.files].forEach(aiAddFile);
+});
+
+// 金鑰記憶（opt-in）
+const aiKeyEl=document.getElementById("aiKey"), aiRemEl=document.getElementById("aiKeyRemember");
+try{ const saved=localStorage.getItem("geolog_ai_key"); if(saved){aiKeyEl.value=saved;aiRemEl.checked=true;} }catch(e){}
+function aiPersistKey(){
+  try{
+    if(aiRemEl.checked&&aiKeyEl.value) localStorage.setItem("geolog_ai_key",aiKeyEl.value);
+    else localStorage.removeItem("geolog_ai_key");
+  }catch(e){}
+}
+aiRemEl.onchange=aiPersistKey; aiKeyEl.onchange=aiPersistKey;
+
+function aiValidate(o){
+  const arr=o&&o.refBoreholes;
+  if(!Array.isArray(arr)||!arr.length) throw new Error("缺少 refBoreholes 陣列");
+  arr.forEach(b=>{
+    if(!b.id||!Array.isArray(b.layers)||!b.layers.length) throw new Error(`${b.id||"?"} 缺少 id 或 layers`);
+    let prev=0;
+    b.layers.forEach(l=>{
+      if(typeof l.t!=="number"||typeof l.b!=="number"||l.b<=l.t) throw new Error(`${b.id} 層界深度異常 (t=${l.t}, b=${l.b})`);
+      if(Math.abs(l.t-prev)>0.011) throw new Error(`${b.id} 層界不連續：${prev} → ${l.t}`);
+      prev=l.b;
+    });
+    if(b.total&&Math.abs(prev-b.total)>0.011) throw new Error(`${b.id} 末層層底 ${prev} 與孔深 ${b.total} 不符`);
+  });
+  return arr;
+}
+
+document.getElementById("btnAiConvert").onclick=async()=>{
+  const key=aiKeyEl.value.trim();
+  if(!key){alert("請先輸入 Anthropic API 金鑰。");return;}
+  if(!aiImages.length)return;
+  aiPersistKey();
+  const btn=document.getElementById("btnAiConvert");
+  btn.disabled=true; aiSetStatus("轉錄中…（約 20–60 秒）");
+  document.getElementById("aiPreview").style.display="none";
+  try{
+    const content=aiImages.map(im=>({type:"image",source:{type:"base64",media_type:im.mediaType,data:im.b64}}));
+    content.push({type:"text",text:"請轉錄這支鑽孔的柱狀圖（共 "+aiImages.length+" 頁）。只輸出 JSON。"});
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "x-api-key":key,
+        "anthropic-version":"2023-06-01",
+        "content-type":"application/json",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body:JSON.stringify({model:AI_MODEL,max_tokens:3000,system:AI_SYS,
+        messages:[{role:"user",content}]})
+    });
+    const data=await resp.json();
+    if(data.type==="error") throw new Error(data.error&&data.error.message||"API 錯誤");
+    const text=(data.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n");
+    const clean=text.replace(/```json|```/g,"").trim();
+    const obj=JSON.parse(clean);
+    const arr=aiValidate(obj);
+    // 預覽
+    const b=arr[0];
+    document.getElementById("aiSummary").innerHTML=
+      `<b>${esc(b.id)}</b> · 孔深 ${fmt(b.total)}m · 水位 ${b.ow!=null?fmt(b.ow)+"m":"—"} · ${b.layers.length} 層`+
+      (arr.length>1?`（共 ${arr.length} 支孔）`:"")+
+      `<br><span style="color:var(--ink-faint)">${esc((obj.note||"").slice(0,120))}</span>`;
+    document.getElementById("aiJson").value=JSON.stringify(obj,null,1);
+    document.getElementById("aiPreview").style.display="";
+    aiSetStatus("轉錄完成，請抽核後匯入。");
+  }catch(err){
+    aiSetStatus(""); alert("轉錄失敗："+err.message);
+  }finally{ btn.disabled=!aiImages.length; }
+};
+
+document.getElementById("btnAiImport").onclick=()=>{
+  try{
+    const obj=JSON.parse(document.getElementById("aiJson").value); // 允許使用者在預覽框修正後匯入
+    const arr=aiValidate(obj);
+    DATA.refBoreholes=DATA.refBoreholes||[];
+    arr.forEach(nb=>{
+      const j=DATA.refBoreholes.findIndex(x=>x.id===nb.id);
+      if(j>=0)DATA.refBoreholes[j]=nb; else DATA.refBoreholes.push(nb);
+    });
+    renderAll(); buildRefList();
+    aiImages=[]; aiRenderThumbs();
+    document.getElementById("aiPreview").style.display="none";
+    aiSetStatus(`已匯入 ${arr.length} 支參考孔 ✓`);
+  }catch(err){ alert("匯入失敗："+err.message); }
+};
+document.getElementById("btnAiDiscard").onclick=()=>{
+  document.getElementById("aiPreview").style.display="none"; aiSetStatus("");
+};
 function set(id,v){document.getElementById(id).value=(v==null?"":v);}
 
 // bind design fields live
