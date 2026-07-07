@@ -2,9 +2,13 @@
 # 預設忽略所有 JSON,避免不慎將「真實案件資料」提交到公開 repo。
 *.json
 
-# 僅放行虛構的示範檔(可安全公開)。
+# 僅放行虛構的示範檔與公開地質資料庫參考孔(可安全公開)。
 !sample.json
 !sample-terrace.json
+!BH-1-nangang-ref.json
+!BH-9-nangang-ref.json
+!guishan-c-ref.json
+!guishan-e-ref.json
 # ─────────────────────────────────────────────────────────
 
 # 系統雜物
