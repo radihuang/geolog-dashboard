@@ -14,7 +14,7 @@
   --line:#C7CDC8; --line-soft:#D9DDD8;
   --water:#1E6E9C; --water-soft:#9CC2D8;
   --ok:#2F7D53; --warn:#C0852A; --bad:#B23B3B;
-  --fill:#97908A; --clay:#7C9A8E; --silt:#C2BB86; --sand:#D6A94E; --gravel:#C17A45;
+  --fill:#97908A; --clay:#7C9A8E; --silt:#C2BB86; --sand:#D6A94E; --gravel:#C17A45; --rock:#7A6F66;
   --display:'Space Grotesk',system-ui,sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --body:'Noto Sans TC','Space Grotesk',system-ui,sans-serif;
@@ -497,9 +497,11 @@ const GW = 1.0; // 水單位重 t/m³
 /* ============================================================
    分類 / 顏色
    ============================================================ */
+const ROCK_USCS=/^(SST|SH|MST|RK|ROCK)/;
 function group(uscs){
   const u=(uscs||"").toUpperCase().trim();
   if(u.includes("SF")||u.includes("FILL")||u.startsWith("F")) return "fill";
+  if(ROCK_USCS.test(u)) return "rock";
   const dual=u.includes("-");
   const first=u.replace(/[^GSMC]/g,"")[0]||u[0];
   let g;
@@ -510,12 +512,12 @@ function group(uscs){
   else g="silt";
   return dual? g+"|dual" : g;
 }
-const COLOR={fill:"var(--fill)",clay:"var(--clay)",silt:"var(--silt)",sand:"var(--sand)",gravel:"var(--gravel)"};
+const COLOR={fill:"var(--fill)",clay:"var(--clay)",silt:"var(--silt)",sand:"var(--sand)",gravel:"var(--gravel)",rock:"var(--rock)"};
 function baseGroup(uscs){return group(uscs).split("|")[0];}
 function fillFor(uscs){return COLOR[baseGroup(uscs)]||"#bbb";}
 function isDual(uscs){return group(uscs).includes("dual");}
 
-const GROUP_LABEL={fill:"回填 SF",clay:"黏土 C",silt:"粉土 M",sand:"砂土 S",gravel:"卵礫石 G"};
+const GROUP_LABEL={fill:"回填 SF",clay:"黏土 C",silt:"粉土 M",sand:"砂土 S",gravel:"卵礫石 G",rock:"岩層 R"};
 
 /* SVG 圖樣定義（卵礫石點、雙重符號斜線） */
 function svgDefs(){
@@ -615,7 +617,7 @@ function renderStrata1(){
   // legend (groups present)
   const present=new Set(); [...DATA.boreholes,...refs()].forEach(b=>b.layers.forEach(l=>present.add(baseGroup(l.uscs))));
   let lg="";
-  ["fill","clay","silt","sand","gravel"].forEach(g=>{ if(present.has(g))
+  ["fill","clay","silt","sand","gravel","rock"].forEach(g=>{ if(present.has(g))
     lg+=`<span><i style="background:${COLOR[g]}"></i>${GROUP_LABEL[g]}</span>`; });
   lg+=`<span><i style="background:repeating-linear-gradient(45deg,var(--clay),var(--clay) 3px,#fff 3px,#fff 5px)"></i>雙重符號</span>`;
   lg+=`<span><i style="border-color:var(--water);border-style:dashed"></i>地下水位</span>`;
@@ -701,7 +703,7 @@ function renderLogDetail(){
   if(b.ow!=null){const yw=padTop+b.ow*scale;
     svg+=`<line x1="${cx}" y1="${yw}" x2="${right}" y2="${yw}" stroke="var(--water)" stroke-width="1.3" stroke-dasharray="4 2"/>`;
     svg+=`<path d="M${cx+3} ${yw} l5 6 l5 -6 z" fill="var(--water)"/>`;
-    svg+=`<text x="${right}" y="${yw-3}" font-size="9" text-anchor="end" fill="var(--water)">水位 GL-${b.ow}m</text>`;
+    svg+=`<text x="${right}" y="${yw-3}" font-size="9" text-anchor="end" fill="var(--water)">水位 GL-${fmt(b.ow)}m</text>`;
   }
   if(de!=null&&de<=md){const y=padTop+de*scale;
     svg+=`<line x1="${cx}" y1="${y}" x2="${right}" y2="${y}" stroke="var(--bad)" stroke-width="1.5"/>`;
@@ -724,9 +726,9 @@ function renderGW(){
   let rows="";
   DATA.boreholes.forEach(b=>{
     const ow=b.ow!=null?b.ow.toFixed(1):"—";
-    const pz=b.pz?`${b.pz.head.toFixed(1)}（埋深${b.pz.depth}m）`:"—";
+    const pz=(b.pz&&b.pz.head!=null)?`${b.pz.head.toFixed(1)}（埋深${b.pz.depth!=null?fmt(b.pz.depth):"—"}m）`:"—";
     let flag="—";
-    if(b.pz&&b.ow!=null){
+    if(b.pz&&b.pz.head!=null&&b.ow!=null){
       const diff=Math.abs(b.pz.head-b.ow);
       flag= diff>=2 ? `<span class="flagsep">分離 ${diff.toFixed(1)}m → 研判隔水層</span>` : `一致（水力連通）`;
     }
@@ -784,11 +786,13 @@ function layerAt(b,depth){ return b.layers.find(l=>depth>=l.t && depth<l.b) || b
 
 function renderChecks(){
   const d=DATA.design, de=num(d.De), D=num(d.D);
-  const out=[]; let baseGroups=new Set();
+  const out=[]; let baseGroups=new Set(), shallowBH=[];
   // classify base soil per borehole, find governing cases
   let heaveGov=null, boilGov=null, upliftGov=null;
   DATA.boreholes.forEach(b=>{
     if(de==null)return;
+    const hd=holeDepth(b);
+    if(de>hd){ shallowBH.push(b.id); return; } // 孔深不足，layerAt 會誤取最深層，排除並警告
     const Lbase=layerAt(b,de); const g=baseGroup(Lbase.uscs); baseGroups.add(g);
     const gAvg=avgGammaAbove(b,de);
     // 隆起 (clay base)
@@ -801,7 +805,7 @@ function renderChecks(){
     }
     // 砂湧 (sand at base or wall tip in sand)
     const tip=D!=null?D:null;
-    const Ltip=tip!=null?layerAt(b,tip):null;
+    const Ltip=(tip!=null&&tip<=hd)?layerAt(b,tip):null; // 壁趾超過孔深時無資料佐證，不取層
     const sandHere = g==="sand" || (Ltip&&baseGroup(Ltip.uscs)==="sand");
     if(sandHere && D!=null && de!=null){
       const Lref = g==="sand"?Lbase:Ltip;
@@ -825,7 +829,8 @@ function renderChecks(){
   // hint
   const bgArr=[...baseGroups];
   let hint = de==null ? `請先在「編輯資料」填入開挖深度 De、擋土措施深度 D 與設計水位，FS 會即時計算。`
-    : `開挖底面（De=${de}m）所在土層：${bgArr.map(g=>GROUP_LABEL[g]).join(" / ")}。系統依此點亮對應破壞模式，並取各孔<b>最不利</b>者為主控。`;
+    : `開挖底面（De=${de}m）所在土層：${bgArr.map(g=>GROUP_LABEL[g]).join(" / ")||"—"}。系統依此點亮對應破壞模式，並取各孔<b>最不利</b>者為主控。`;
+  if(shallowBH.length) hint+=` <b style="color:var(--bad)">注意：${shallowBH.map(esc).join("、")} 孔深小於 De，無底面土層資料，已排除於檢核外。</b>`;
   document.getElementById("checkHint").innerHTML=hint;
 
   // ---- 隆起 ----
@@ -919,7 +924,7 @@ function checkCard(o){
 function renderSummary(checkRes){
   // weakest layer by N
   let weak=null;
-  DATA.boreholes.forEach(b=>b.layers.forEach(l=>{ if(l.N!=null && baseGroup(l.uscs)!=="gravel"){ if(!weak||l.N<weak.N) weak={...l,bh:b.id}; }}));
+  DATA.boreholes.forEach(b=>b.layers.forEach(l=>{ if(l.N!=null && baseGroup(l.uscs)!=="gravel" && baseGroup(l.uscs)!=="rock"){ if(!weak||l.N<weak.N) weak={...l,bh:b.id}; }}));
   const md=maxDepth(), de=num(DATA.design.De);
   const bg=checkRes.baseGroups||[];
   let mode = bg.includes("sand")?"砂湧（透水砂層）":(bg.includes("clay")?"隆起（軟弱黏土）":"—");
@@ -1008,7 +1013,7 @@ function renderSummary(checkRes){
 // 例：BH-9 的 GM「岩塊夾細砂」屬風化岩帶，不應計入礫石面。
 function isRockLayer(l){
   const n=l.name||"", u=(l.uscs||"").toUpperCase();
-  return /岩塊|風化|岩$|岩[，,、]|砂岩|頁岩|泥岩|凝灰岩/.test(n) || /^(SST|SH|MST|RK|ROCK)/.test(u);
+  return /岩塊|風化|岩$|岩[，,、]|砂岩|頁岩|泥岩|凝灰岩/.test(n) || ROCK_USCS.test(u);
 }
 function isAlluvialGravel(l){
   if(baseGroup(l.uscs)==="fill") return false;      // 回填含卵礫石不算
@@ -1158,6 +1163,42 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","
 function num(v){ if(v===""||v==null) return null; const n=parseFloat(v); return isNaN(n)?null:n; }
 function fmt(v){ const n=num(v); return n==null?"—":(Math.round(n*100)/100).toString(); }
 
+/* ---- 匯入正規化 ----
+   外來 JSON（匯入、套用、AI 轉錄）一律過此層：數字欄位強制轉型（非數字→null）、
+   文字欄位轉字串。防止字串塞進數字欄位後未經 esc() 直接進 innerHTML 造成 XSS，
+   也避免缺少 design/boreholes 的 JSON 讓 renderAll 崩潰。 ---- */
+function normLayer(l){
+  ["t","b","N","Su","gamma","LL","PI","phi"].forEach(k=>{ if(k in l) l[k]=num(l[k]); });
+  ["uscs","name","sample","note"].forEach(k=>{ if(l[k]!=null) l[k]=String(l[k]); });
+  return l;
+}
+function normHole(b){
+  b.id=b.id==null?"":String(b.id);
+  b.total=num(b.total); b.ow=num(b.ow);
+  if(b.pz&&typeof b.pz==="object"){
+    b.pz={depth:num(b.pz.depth),head:num(b.pz.head)};
+    if(b.pz.depth==null&&b.pz.head==null) b.pz=null;
+  } else b.pz=null;
+  b.layers=Array.isArray(b.layers)?b.layers.filter(l=>l&&typeof l==="object").map(normLayer):[];
+  if(b.src&&typeof b.src==="object"){
+    ["dist","x","y","elev"].forEach(k=>{ if(k in b.src) b.src[k]=num(b.src[k]); });
+    ["db","proj","year"].forEach(k=>{ if(b.src[k]!=null) b.src[k]=String(b.src[k]); });
+  }
+  return b;
+}
+function normalizeData(o){
+  if(!o||typeof o!=="object"||Array.isArray(o)) throw new Error("JSON 最外層須為物件");
+  o.name=o.name==null?"":String(o.name);
+  o.loc=o.loc==null?"":String(o.loc);
+  const d=(o.design&&typeof o.design==="object")?o.design:{};
+  const design=JSON.parse(JSON.stringify(EMPTY.design));
+  Object.keys(design).forEach(k=>{ design[k]=num(d[k]!=null?d[k]:design[k]); });
+  o.design=design;
+  o.boreholes=Array.isArray(o.boreholes)?o.boreholes.filter(b=>b&&typeof b==="object").map(normHole):[];
+  o.refBoreholes=Array.isArray(o.refBoreholes)?o.refBoreholes.filter(b=>b&&typeof b==="object").map(normHole):[];
+  return o;
+}
+
 /* ============================================================
    Edit drawer logic
    ============================================================ */
@@ -1207,6 +1248,7 @@ function importRefFile(file){
       if(!Array.isArray(incoming)||!incoming.length) throw new Error("找不到 refBoreholes 陣列");
       const bad=incoming.find(b=>!b.id||!Array.isArray(b.layers));
       if(bad) throw new Error("參考孔缺少 id 或 layers");
+      incoming.forEach(normHole);
       DATA.refBoreholes=DATA.refBoreholes||[];
       incoming.forEach(nb=>{
         const j=DATA.refBoreholes.findIndex(x=>x.id===nb.id);
@@ -1355,6 +1397,7 @@ document.getElementById("btnAiImport").onclick=()=>{
   try{
     const obj=JSON.parse(document.getElementById("aiJson").value); // 允許使用者在預覽框修正後匯入
     const arr=aiValidate(obj);
+    arr.forEach(normHole);
     DATA.refBoreholes=DATA.refBoreholes||[];
     arr.forEach(nb=>{
       const j=DATA.refBoreholes.findIndex(x=>x.id===nb.id);
@@ -1388,26 +1431,26 @@ function buildBHList(){
   wrap.innerHTML=DATA.boreholes.map((b,bi)=>{
     const rows=b.layers.map((l,li)=>`
       <tr>
-        <td><input class="num" value="${l.t??""}" data-bi="${bi}" data-li="${li}" data-k="t" type="number" step="0.1"></td>
-        <td><input class="num" value="${l.b??""}" data-bi="${bi}" data-li="${li}" data-k="b" type="number" step="0.1"></td>
+        <td><input class="num" value="${esc(l.t??"")}" data-bi="${bi}" data-li="${li}" data-k="t" type="number" step="0.1"></td>
+        <td><input class="num" value="${esc(l.b??"")}" data-bi="${bi}" data-li="${li}" data-k="b" type="number" step="0.1"></td>
         <td><input value="${esc(l.uscs??"")}" data-bi="${bi}" data-li="${li}" data-k="uscs"></td>
         <td><input value="${esc(l.name??"")}" data-bi="${bi}" data-li="${li}" data-k="name"></td>
-        <td><input class="num" value="${l.N??""}" data-bi="${bi}" data-li="${li}" data-k="N" type="number"></td>
-        <td><input class="num" value="${l.Su??""}" data-bi="${bi}" data-li="${li}" data-k="Su" type="number" step="0.1"></td>
-        <td><input class="num" value="${l.gamma??""}" data-bi="${bi}" data-li="${li}" data-k="gamma" type="number" step="0.01"></td>
+        <td><input class="num" value="${esc(l.N??"")}" data-bi="${bi}" data-li="${li}" data-k="N" type="number"></td>
+        <td><input class="num" value="${esc(l.Su??"")}" data-bi="${bi}" data-li="${li}" data-k="Su" type="number" step="0.1"></td>
+        <td><input class="num" value="${esc(l.gamma??"")}" data-bi="${bi}" data-li="${li}" data-k="gamma" type="number" step="0.01"></td>
         <td><select data-bi="${bi}" data-li="${li}" data-k="sample"><option value=""></option><option ${l.sample==="S"?"selected":""}>S</option><option ${l.sample==="T"?"selected":""}>T</option></select></td>
         <td><button class="rm" data-rm-l="${bi}_${li}">✕</button></td>
       </tr>`).join("");
     return `<details class="bh-edit" ${bi===0?"open":""}>
-      <summary>${esc(b.id)} <span class="dl">${b.layers.length} 層 · 孔深 ${b.total??"—"}m · 水位 ${b.ow!=null?"GL-"+b.ow:"—"}</span>
+      <summary>${esc(b.id)} <span class="dl">${b.layers.length} 層 · 孔深 ${fmt(b.total)}m · 水位 ${b.ow!=null?"GL-"+fmt(b.ow):"—"}</span>
         <button class="rm" data-rm-bh="${bi}" title="刪除此孔">✕</button></summary>
       <div class="inner">
         <div class="grid3" style="margin-bottom:6px">
           <div class="field"><label>孔號</label><input value="${esc(b.id)}" data-bi="${bi}" data-bk="id"></div>
-          <div class="field"><label>孔深 (m)</label><input class="num" value="${b.total??""}" data-bi="${bi}" data-bk="total" type="number" step="0.1"></div>
-          <div class="field"><label>觀測井 GL- (m)</label><input class="num" value="${b.ow??""}" data-bi="${bi}" data-bk="ow" type="number" step="0.1"></div>
-          <div class="field"><label>水壓計埋深 (m)</label><input class="num" value="${b.pz?b.pz.depth:""}" data-bi="${bi}" data-bk="pzd" type="number" step="0.1" placeholder="選填"></div>
-          <div class="field"><label>水壓計水頭 GL- (m)</label><input class="num" value="${b.pz?b.pz.head:""}" data-bi="${bi}" data-bk="pzh" type="number" step="0.1" placeholder="選填"></div>
+          <div class="field"><label>孔深 (m)</label><input class="num" value="${esc(b.total??"")}" data-bi="${bi}" data-bk="total" type="number" step="0.1"></div>
+          <div class="field"><label>觀測井 GL- (m)</label><input class="num" value="${esc(b.ow??"")}" data-bi="${bi}" data-bk="ow" type="number" step="0.1"></div>
+          <div class="field"><label>水壓計埋深 (m)</label><input class="num" value="${esc(b.pz?b.pz.depth??"":"")}" data-bi="${bi}" data-bk="pzd" type="number" step="0.1" placeholder="選填"></div>
+          <div class="field"><label>水壓計水頭 GL- (m)</label><input class="num" value="${esc(b.pz?b.pz.head??"":"")}" data-bi="${bi}" data-bk="pzh" type="number" step="0.1" placeholder="選填"></div>
         </div>
         <table class="layertbl">
           <thead><tr><th>頂深</th><th>底深</th><th>USCS</th><th>名稱</th><th>N</th><th>Su</th><th>γ</th><th>取樣</th><th></th></tr></thead>
@@ -1471,7 +1514,7 @@ document.getElementById("addBH").onclick=()=>{
 
 document.getElementById("applyJson").onclick=()=>{
   try{ const o=JSON.parse(document.getElementById("jsonEdit").value);
-    DATA=o; renderAll(); buildEditForm();
+    DATA=normalizeData(o); renderAll(); buildEditForm();
     document.getElementById("saveMsg").textContent="JSON 已套用 ✓";
   }catch(err){ alert("JSON 格式錯誤："+err.message); }
 };
@@ -1508,7 +1551,7 @@ document.getElementById("btnExport2").onclick=doExport;
 document.getElementById("btnImport").onclick=()=>document.getElementById("fileInput").click();
 document.getElementById("fileInput").onchange=e=>{
   const f=e.target.files[0]; if(!f)return;
-  const r=new FileReader(); r.onload=()=>{ try{ DATA=JSON.parse(r.result); renderAll(); }catch(err){alert("讀取失敗："+err.message);} };
+  const r=new FileReader(); r.onload=()=>{ try{ DATA=normalizeData(JSON.parse(r.result)); renderAll(); }catch(err){alert("讀取失敗："+err.message);} };
   r.readAsText(f); e.target.value="";
 };
 
