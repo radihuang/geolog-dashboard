@@ -72,16 +72,25 @@
 
 ---
 
-**周邊參考孔（地調所公開資料庫）**
+**周邊參考孔的兩種取得方式**
 
-1. 到[工程地質探勘資料庫](https://geotech.gsmma.gov.tw/Imoeagis/Home/Map)右上「各縣市鑽孔數量統計」，下載基地所在縣市的 MDB zip 並解壓（同縣市可重複用，建議留存）。
-2. 第一次面對該縣市檔：`python3 tools/gsmma_nearby.py --mdb 63000.mdb --list` 確認資料表偵測結果；有誤則以 `--mapping mapping.json` 覆寫。
-3. 產出參考孔：`python3 tools/gsmma_nearby.py --mdb 63000.mdb --site-twd97 E,N --radius 500 --min-depth 30 --max 6 -o ref-boreholes.json`（`--min-depth` 建議取「開挖深度＋擋土壁貫入段」以上；座標也可用 `--site-wgs84 lat,lon`）。
-4. 儀表板「編輯資料 → 周邊參考鑽孔 → 匯入參考孔 JSON」。匯出案件 JSON 時參考孔會一併保存。
-5. **或使用「AI 圖片轉錄」**：無法取得 MDB 時，在查詢系統開啟目標孔的柱狀圖，截圖後於編輯抽屜的「AI 圖片轉錄」貼上（同一孔可多頁），輸入自己的 Anthropic API 金鑰，AI 會依內建判讀規則（N=後兩段和、拒貫記 100、跨層樣本依粒徑歸層等）轉成 JSON，預覽抽核後匯入。每次轉錄成本約新臺幣 1–3 元。
-5. 讀取 MDB 需安裝 [mdbtools](https://github.com/mdbtools/mdbtools)（`brew install mdbtools` / `sudo apt install mdbtools`）；無法安裝時可從 Access 匯出 CSV 改用 `--csv-holes/--csv-layers/--csv-spt`。
+參考孔資料來自地調所「工程地質探勘資料庫」。**注意：各縣市鑽探資料無公開整包下載**——公開區僅有 Geo2010/Geo2020 軟體與手冊。取得完整柱狀資料有兩條路：
 
-> 參考孔為政府公開資料，可與同事共用；差異旗標僅為比對提示，非工程判定。資料如與原書面報告不符，以原書面為準。
+*路徑 A — AI 圖片轉錄（免申請，適合零星幾孔）*
+
+1. 到[工程地質探勘資料庫查詢系統](https://geotech.gsmma.gov.tw/Imoeagis/Home/Map)以地圖找到基地周邊、深度足夠的孔，開啟其柱狀圖並截圖（同一孔可多頁）。
+2. 儀表板「編輯資料 → 周邊參考鑽孔 → AI 圖片轉錄」貼上截圖，輸入自己的 Anthropic API 金鑰，AI 依內建判讀規則（N=後兩段和、拒貫記 100、跨層樣本依粒徑歸層、民國年轉換等）轉成 JSON，預覽抽核後匯入。每次轉錄成本約新臺幣 1–3 元。
+
+*路徑 B — MDB 批次轉檔（適合已有 MDB、需一次處理多孔）*
+
+MDB 來源擇一：向地調所**付費申請**鑽探資料（取得 Geo2010 電子檔），或使用**公司歷年案件自建**的 Geo2010 MDB。
+
+1. 第一次面對該 MDB：`python3 tools/gsmma_nearby.py --mdb 63000.mdb --list` 確認資料表偵測結果；有誤則以 `--mapping mapping.json` 覆寫。
+2. 產出參考孔：`python3 tools/gsmma_nearby.py --mdb 63000.mdb --site-twd97 E,N --radius 500 --min-depth 30 --max 6 -o ref-boreholes.json`（`--min-depth` 建議取「開挖深度＋擋土壁貫入段」以上；座標也可用 `--site-wgs84 lat,lon`）。
+3. 儀表板「編輯資料 → 周邊參考鑽孔 → 匯入參考孔 JSON」。匯出案件 JSON 時參考孔會一併保存。
+4. 讀取 MDB 需安裝 [mdbtools](https://github.com/mdbtools/mdbtools)（`brew install mdbtools` / `sudo apt install mdbtools`）；無法安裝時可從 Access 匯出 CSV 改用 `--csv-holes/--csv-layers/--csv-spt`。
+
+> 差異旗標僅為比對提示，非工程判定。申請取得的資料有其授權使用範圍，散布前請確認條款。資料如與原書面報告不符，以原書面為準。
 
 ---
 
